@@ -1,0 +1,31 @@
+# .NET / Visual Studio
+bin/
+obj/
+publish/
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.nupkg
+*.snupkg
+
+# IDE / Editor
+.vscode/
+
+# Logs & lokale Laufzeitdaten
+*.log
+*.db
+*.sqlite
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# Interne Arbeits- & KI-Steuerdateien (nur lokal)
+CONTEXT.md
+DESIGN.md
+GEMINI.md
+CHANGELOG.md
+docs/
+.agents/

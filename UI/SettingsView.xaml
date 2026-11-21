@@ -1,0 +1,985 @@
+<UserControl x:Class="WindowsNotch.UI.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="clr-namespace:WindowsNotch.UI"
+             Background="Transparent"
+             Foreground="{DynamicResource TextPrimary}"
+             FontFamily="Segoe UI Variable Text, Segoe UI"
+             UseLayoutRounding="True">
+
+    <UserControl.Resources>
+        <SolidColorBrush x:Key="WinBg" Color="#000000" />
+        <SolidColorBrush x:Key="SidebarBg" Color="#09090B" />
+        <SolidColorBrush x:Key="SidebarBorder" Color="#14FFFFFF" />
+        <SolidColorBrush x:Key="CardBg" Color="#111114" />
+        <SolidColorBrush x:Key="CardBorder" Color="#0CFFFFFF" />
+        <SolidColorBrush x:Key="ControlBg" Color="#18181D" />
+        <SolidColorBrush x:Key="ControlHoverBg" Color="#24242C" />
+        <SolidColorBrush x:Key="ControlBorder" Color="#18FFFFFF" />
+        <SolidColorBrush x:Key="TextPrimary" Color="#FFFFFF" />
+        <SolidColorBrush x:Key="TextSecondary" Color="#8E8E93" />
+        <SolidColorBrush x:Key="Accent" Color="#8B5CF6" />
+        <SolidColorBrush x:Key="AccentHover" Color="#9F7AEA" />
+        <SolidColorBrush x:Key="AccentForeground" Color="#FFFFFF" />
+        <LinearGradientBrush x:Key="AccentGradient" StartPoint="0,0" EndPoint="1,0">
+            <GradientStop Color="#2822A8" Offset="0" />
+            <GradientStop Color="#6D28D9" Offset="0.55" />
+            <GradientStop Color="#9333EA" Offset="1" />
+        </LinearGradientBrush>
+        <SolidColorBrush x:Key="NavHoverBg" Color="#14FFFFFF" />
+        <SolidColorBrush x:Key="NavActiveBg" Color="#1E1E24" />
+        <SolidColorBrush x:Key="SwitchTrackBg" Color="#2C2C36" />
+        <SolidColorBrush x:Key="SwitchTrackHoverBg" Color="#3A3A48" />
+        <SolidColorBrush x:Key="SwitchKnobBg" Color="#E4E4E7" />
+        <SolidColorBrush x:Key="DividerBg" Color="#14FFFFFF" />
+        <SolidColorBrush x:Key="PopupBg" Color="#18181D" />
+        <SolidColorBrush x:Key="PopupBorder" Color="#24FFFFFF" />
+        <SolidColorBrush x:Key="SliderTrackBg" Color="#2C2C36" />
+        <SolidColorBrush x:Key="MonitorPreviewBg" Color="#0A0A0D" />
+        <SolidColorBrush x:Key="MonitorPreviewBorder" Color="#24FFFFFF" />
+
+        <!-- Card Container -->
+        <Style x:Key="SettingsCard" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource CardBg}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorder}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="16" />
+            <Setter Property="Padding" Value="16,14" />
+            <Setter Property="Margin" Value="0,0,0,10" />
+        </Style>
+
+        <!-- Section Header -->
+        <Style x:Key="PageTitle" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Segoe UI Variable Display, Segoe UI" />
+            <Setter Property="FontSize" Value="17" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+            <Setter Property="Margin" Value="0,0,0,12" />
+        </Style>
+
+        <Style x:Key="CardTitle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+        </Style>
+
+        <Style x:Key="MutedHint" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11.5" />
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondary}" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+
+        <!-- Icon-Rail-Button (wie die Icon-Leiste der Notch: 36x36, Hover 1.05, Press 0.94) -->
+        <Style x:Key="RailButton" TargetType="Button">
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Width" Value="36" />
+            <Setter Property="Height" Value="36" />
+            <Setter Property="Margin" Value="0,0,0,4" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="Transparent" CornerRadius="12">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="{DynamicResource NavHoverBg}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Toggle Switch (CheckBox) -->
+        <Style TargetType="CheckBox">
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <Grid Background="Transparent">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <ContentPresenter Grid.Column="0" VerticalAlignment="Center" Margin="0,0,14,0" />
+                            <Border x:Name="track" Grid.Column="1" Width="38" Height="20" CornerRadius="10"
+                                    Background="{DynamicResource SwitchTrackBg}" BorderBrush="{DynamicResource ControlBorder}" BorderThickness="1"
+                                    VerticalAlignment="Center">
+                                <Border x:Name="knob" Width="14" Height="14" CornerRadius="7"
+                                        Background="{DynamicResource SwitchKnobBg}" HorizontalAlignment="Left" Margin="2,0,2,0" />
+                            </Border>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="track" Property="Background" Value="{DynamicResource SwitchTrackHoverBg}" />
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="track" Property="Background" Value="{DynamicResource Accent}" />
+                                <Setter TargetName="track" Property="BorderBrush" Value="{DynamicResource Accent}" />
+                                <Setter TargetName="knob" Property="HorizontalAlignment" Value="Right" />
+                                <Setter TargetName="knob" Property="Background" Value="{DynamicResource AccentForeground}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Primary & Secondary Buttons -->
+        <Style x:Key="SecondaryButton" TargetType="Button">
+            <Setter Property="Background" Value="{DynamicResource ControlBg}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ControlBorder}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="FontSize" Value="12.5" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="MinHeight" Value="32" />
+            <Setter Property="Padding" Value="16,6" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="10" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="{DynamicResource ControlHoverBg}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource SecondaryButton}">
+            <Setter Property="Background" Value="{DynamicResource Accent}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Accent}" />
+            <Setter Property="Foreground" Value="{DynamicResource AccentForeground}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="10" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="{DynamicResource AccentHover}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Modern TextBox -->
+        <Style TargetType="TextBox">
+            <Setter Property="Background" Value="{DynamicResource ControlBg}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+            <Setter Property="CaretBrush" Value="{DynamicResource TextPrimary}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ControlBorder}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="10,6" />
+            <Setter Property="FontSize" Value="12.5" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="10">
+                            <ScrollViewer x:Name="PART_ContentHost" Margin="2" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource Accent}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="ModernComboBoxItemStyle" TargetType="ComboBoxItem">
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+            <Setter Property="Padding" Value="10,7,10,8" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBoxItem">
+                        <Border x:Name="bd" Background="Transparent" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="{DynamicResource NavHoverBg}" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="{DynamicResource Accent}" />
+                                <Setter Property="Foreground" Value="{DynamicResource AccentForeground}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Modern ComboBox -->
+        <Style TargetType="ComboBox">
+            <Setter Property="Background" Value="{DynamicResource ControlBg}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ControlBorder}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="10,6" />
+            <Setter Property="FontSize" Value="12.5" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <ToggleButton x:Name="ToggleButton"
+                                          IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                          Focusable="False" ClickMode="Press">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Border x:Name="bd" Background="{DynamicResource ControlBg}"
+                                                BorderBrush="{DynamicResource ControlBorder}"
+                                                BorderThickness="1" CornerRadius="10" Padding="10,7" MinHeight="34">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <Path Grid.Column="1" Data="M 1,1 L 5,5 L 9,1"
+                                                      Stroke="{DynamicResource TextSecondary}" StrokeThickness="1.5"
+                                                      StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                                      VerticalAlignment="Center" Margin="8,0,0,0" />
+                                            </Grid>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="bd" Property="Background" Value="{DynamicResource ControlHoverBg}" />
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+                            <ContentPresenter IsHitTestVisible="False"
+                                              Content="{TemplateBinding SelectionBoxItem}"
+                                              ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                              ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
+                                              ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}"
+                                              Margin="11,4,28,5" VerticalAlignment="Center" />
+                            <Popup x:Name="Popup" Placement="Bottom" IsOpen="{TemplateBinding IsDropDownOpen}"
+                                   AllowsTransparency="True" Focusable="False" PopupAnimation="Fade">
+                                <Border Background="{DynamicResource PopupBg}" BorderBrush="{DynamicResource PopupBorder}" BorderThickness="1"
+                                        CornerRadius="10" Margin="0,4,0,0" Padding="4"
+                                        MinWidth="{TemplateBinding ActualWidth}">
+                                    <ScrollViewer MaxHeight="220">
+                                        <ItemsPresenter />
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="ItemContainerStyle" Value="{StaticResource ModernComboBoxItemStyle}" />
+        </Style>
+
+        <!-- Modern Slider -->
+        <Style TargetType="Slider">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Slider">
+                        <Grid VerticalAlignment="Center" Height="22">
+                            <Border Height="4" CornerRadius="2" Background="{DynamicResource SliderTrackBg}" VerticalAlignment="Center" />
+                            <Track x:Name="PART_Track">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Command="Slider.IncreaseLarge" IsHitTestVisible="False">
+                                        <RepeatButton.Template>
+                                            <ControlTemplate TargetType="RepeatButton">
+                                                <Border Height="4" CornerRadius="2" Background="{DynamicResource Accent}" />
+                                            </ControlTemplate>
+                                        </RepeatButton.Template>
+                                    </RepeatButton>
+                                </Track.DecreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb>
+                                        <Thumb.Template>
+                                            <ControlTemplate TargetType="Thumb">
+                                                <Border x:Name="thumb" Width="16" Height="16" CornerRadius="8"
+                                                        Background="#FFFFFF" BorderBrush="{DynamicResource Accent}" BorderThickness="2" />
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="thumb" Property="Width" Value="18" />
+                                                        <Setter TargetName="thumb" Property="Height" Value="18" />
+                                                        <Setter TargetName="thumb" Property="CornerRadius" Value="9" />
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Thumb.Template>
+                                    </Thumb>
+                                </Track.Thumb>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Command="Slider.DecreaseLarge" IsHitTestVisible="False">
+                                        <RepeatButton.Template>
+                                            <ControlTemplate TargetType="RepeatButton">
+                                                <Border Height="4" Background="Transparent" />
+                                            </ControlTemplate>
+                                        </RepeatButton.Template>
+                                    </RepeatButton>
+                                </Track.IncreaseRepeatButton>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Modern ListBox -->
+        <Style TargetType="ListBox">
+            <Setter Property="Background" Value="{DynamicResource ControlBg}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ControlBorder}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="4" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBox">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="10" Padding="{TemplateBinding Padding}">
+                            <ScrollViewer Focusable="False">
+                                <ItemsPresenter />
+                            </ScrollViewer>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="50" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Icon-Rail: Seitenwahl wie die Icon-Leiste der Notch; der Indikator gleitet mit Spring-Ease -->
+        <Grid Grid.Column="0" Margin="0,2,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Width="38">
+            <Border x:Name="NavIndicator" Width="36" Height="36" CornerRadius="12"
+                    HorizontalAlignment="Left" VerticalAlignment="Top"
+                    Background="{DynamicResource NavActiveBg}">
+                <Border.RenderTransform>
+                    <TranslateTransform x:Name="NavIndicatorShift" />
+                </Border.RenderTransform>
+            </Border>
+            <StackPanel x:Name="NavRail" />
+        </Grid>
+
+        <!-- Inhalt + Aktionen (keine Trennlinien, direkt auf dem Notch-Hintergrund) -->
+        <DockPanel Grid.Column="1">
+            <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+                <Button Content="{ui:Loc settings.actions.back}" Style="{StaticResource SecondaryButton}" Width="98" Margin="0,0,8,0" Click="Cancel_Click" />
+                <Button Content="{ui:Loc settings.actions.apply}" Style="{StaticResource SecondaryButton}" Width="98" Margin="0,0,8,0" Click="Apply_Click" />
+                <Button Content="{ui:Loc settings.actions.save}" Style="{StaticResource PrimaryButton}" Width="98" Click="Save_Click" />
+            </StackPanel>
+
+            <ScrollViewer x:Name="PagesScroll" VerticalScrollBarVisibility="Auto" Padding="0,0,10,0"
+                          PreviewMouseWheel="PagesScroll_PreviewMouseWheel">
+                <Grid>
+                    <!-- 0: Allgemein -->
+                    <StackPanel x:Name="Page0" Visibility="Visible">
+                        <TextBlock Text="{ui:Loc settings.general.title}" Style="{StaticResource PageTitle}" />
+
+                        <Border Style="{StaticResource SettingsCard}">
+                            <StackPanel>
+                                <TextBlock Text="{ui:Loc settings.general.language_title}" Style="{StaticResource CardTitle}" />
+                                <TextBlock Style="{StaticResource MutedHint}" Margin="0,3,0,10"
+                                           Text="{ui:Loc settings.general.language_hint}" />
+                                <ComboBox x:Name="LanguageBox" Width="280" HorizontalAlignment="Left"
+                                          SelectedValuePath="Code"
+                                          SelectionChanged="LanguageBox_SelectionChanged">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding DisplayName}" Padding="0,1,0,2" />
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                    <ComboBox.ItemContainerStyle>
+                                        <Style TargetType="ComboBoxItem" BasedOn="{StaticResource ModernComboBoxItemStyle}">
+                                            <Style.Triggers>
+                                                <Trigger Property="IsSelected" Value="True">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </ComboBox.ItemContainerStyle>
+                                </ComboBox>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource SettingsCard}">
+                            <StackPanel>
+                                <TextBlock Text="{ui:Loc settings.general.profile_title}" Style="{StaticResource CardTitle}" />
+                                <TextBlock Style="{StaticResource MutedHint}" Margin="0,3,0,10"
+                                           Text="{ui:Loc settings.general.profile_hint}" />
+                                <ComboBox x:Name="ProfileBox" Width="280" HorizontalAlignment="Left"
+                                          SelectionChanged="ProfileBox_SelectionChanged" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource SettingsCard}">
+                            <StackPanel>
+                                <CheckBox Content="{ui:Loc settings.general.autostart}" IsChecked="{Binding AutoStart, Mode=TwoWay}" />
+                                <Border Height="1" Background="{DynamicResource DividerBg}" Margin="0,12" />
+                                <CheckBox Content="{ui:Loc settings.general.hotkeys}"
+                                          IsChecked="{Binding HotkeyEnabled, Mode=TwoWay}" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource SettingsCard}">
+                            <StackPanel>
+                                <TextBlock Text="{ui:Loc settings.general.onboarding_title}" Style="{StaticResource CardTitle}" />
+                                <TextBlock Style="{StaticResource MutedHint}" Margin="0,3,0,10"
+                                           Text="{ui:Loc settings.general.onboarding_hint}" />
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Content="{ui:Loc settings.general.onboarding_start}" Style="{StaticResource SecondaryButton}" Click="RestartOnboarding_Click" Margin="0,0,8,0" />
+                                    <Button Content="{ui:Loc settings.general.export}" Style="{StaticResource SecondaryButton}" Click="ExportSettings_Click" Margin="0,0,8,0" />
+                                    <Button Content="{ui:Loc settings.general.import}" Style="{StaticResource SecondaryButton}" Click="ImportSettings_Click" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- 1: Darstellung -->
+                    <StackPanel x:Name="Page1" Visibility="Collapsed">
+                        <TextBlock Text="{ui:Loc settings.appearance.title}" Style="{StaticResource PageTitle}" />
+
+                        <Border Style="{StaticResource SettingsCard}">
+                            <DockPanel LastChildFill="False">
+                                <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center" MaxWidth="350">
+                                    <TextBlock Text="{ui:Loc settings.appearance.layout_shortcut_title}" Style="{StaticResource CardTitle}" />
+                                    <TextBlock Style="{StaticResource MutedHint}" Margin="0,2,0,0"
+                                               Text="{ui:Loc settings.appearance.layout_shortcut_hint}" />
+                                </StackPanel>
+                                <Button DockPanel.Dock="Right" Content="{ui:Loc settings.appearance.layout_shortcut_btn}"
+                                        Style="{StaticResource SecondaryButton}" VerticalAlignment="Center"
+                                        Click="OpenNotchLayout_Click" />
+                            </DockPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource SettingsCard}">
+                            <StackPanel>
+                                <TextBlock Text="{ui:Loc settings.appearance.style_title}" Style="{StaticResource CardTitle}" />
+                                <TextBlock Style="{StaticResource MutedHint}" Margin="0,3,0,10"
+                                           Text="{ui:Loc settings.appearance.style_hint}" />
+                                <ComboBox x:Name="StyleBox" Width="290" HorizontalAlignment="Left" />
+
+                                <Grid Margin="0,14,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="16" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- Interaktive Mini-Monitor-Vorschau für 8 Positionen -->
+                                    <Border Grid.Column="0" Width="206" Height="118" CornerRadius="10"
+                                            Background="{DynamicResource MonitorPreviewBg}" BorderBrush="{DynamicResource MonitorPreviewBorder}" BorderThickness="1.5" Padding="6">
+                                        <Grid x:Name="PositionPickerGrid">
+                                            <!-- Oben: Links, Mitte, Rechts -->
+                                            <Button Tag="TopLeft" ToolTip="{ui:Loc settings.appearance.pos_tl}" Click="PositionSpot_Click"
+                                                    HorizontalAlignment="Left" VerticalAlignment="Top" Width="34" Height="12" Cursor="Hand" />
+                                            <Button Tag="TopCenter" ToolTip="{ui:Loc settings.appearance.pos_tc}" Click="PositionSpot_Click"
+                                                    HorizontalAlignment="Center" VerticalAlignment="Top" Width="44" Height="12" Cursor="Hand" />
+                                            <Button Tag="TopRight" ToolTip="{ui:Loc settings.appearance.pos_tr}" Click="PositionSpot_Click"
+                                                    HorizontalAlignment="Right" VerticalAlignment="Top" Width="34" Height="12" Cursor="Hand" />
+
+                                            <!-- Mitte: Links, Rechts -->
+                                            <Button Tag="LeftCenter" ToolTip="{ui:Loc settings.appearance.pos_lc}" Click="PositionSpot_Click"
+                                                    HorizontalAlignment="Left" VerticalAlignment="Center" Width="12" Height="38" Cursor="Hand" />
+                                            <Button Tag="RightCenter" ToolTip="{ui:Loc settings.appearance.pos_rc}" Click="PositionSpot_Click"
+                                                    HorizontalAlignment="Right" VerticalAlignment="Center" Width="12" Height="38" Cursor="Hand" />
+
+                                            <!-- Unten: Links, Mitte, Rechts -->
+                                            <Button Tag="BottomLeft" ToolTip="{ui:Loc settings.appearance.pos_bl}" Click="PositionSpot_Click"
+                                                    HorizontalAlignment="Left" VerticalAlignment="Bottom" Width="34" Height="12" Cursor="Hand" />
+                                            <Button Tag="BottomCenter" ToolTip="{ui:Loc settings.appearance.pos_bc}" Click="PositionSpot_Click"
+                                                    HorizontalAlignment="Center" VerticalAlignment="Bottom" Width="44" Height="12" Cursor="Hand" />
+                                            <Button Tag="BottomRight" ToolTip="{ui:Loc settings.appearance.pos_br}" Click="PositionSpot_Click"
+                                                    HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="34" Height="12" Cursor="Hand" />
+                                        </Grid>
+                                    </Border>
+
+                                    <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                        <TextBlock Text="{ui:Loc settings.appearance.pos_active}" FontSize="11.5" Foreground="{DynamicResource TextSecondary}" />
+                                        <TextBlock x:Name="PositionNameText" Text="{ui:Loc settings.appearance.pos_tc}" FontSize="14" FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource TextPrimary}" Margin="0,3,0,6" />
+                                        <TextBlock Style="{StaticResource MutedHint}"
+                                                   Text="{ui:Loc settings.appearance.pos_hint}" />
+                                    </StackPanel>
+                                </Grid>
+
+                                <Border Height="1" Background="{DynamicResource DividerBg}" Margin="0,14" />
+
+                                <TextBlock Text="{ui:Loc settings.appearance.theme_title}" Style="{StaticResource CardTitle}" />
+                                <TextBlock Style="{StaticResource MutedHint}" Margin="0,3,0,8"
+                                           Text="{ui:Loc settings.appearance.theme_hint}" />
+                                <ComboBox x:Name="ThemeBox" Width="290" HorizontalAlignment="Left"
+                                          SelectionChanged="ThemeBox_SelectionChanged" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource SettingsCard}">
+                            <StackPanel>
+                                <TextBlock Text="{ui:Loc settings.appearance.accents_title}" Style="{StaticResource CardTitle}" />
+                                <TextBlock Style="{StaticResource MutedHint}" Margin="0,3,0,10"
+                                           Text="{ui:Loc settings.appearance.accents_hint}" />
+
+                                <WrapPanel x:Name="AccentSwatchPanel" Margin="0,0,0,12" />
+
+                                <Border x:Name="GradientPreviewBar" Height="12" CornerRadius="6" Margin="0,0,0,12" />
+
+                                <CheckBox x:Name="UseCustomAccentBox"
+                                          Content="{ui:Loc settings.appearance.custom_accent}"
+                                          Checked="CustomAccent_Changed" Unchecked="CustomAccent_Changed" />
+
+                                <StackPanel x:Name="CustomAccentEditorPanel" Margin="0,10,0,0" Visibility="Collapsed">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="12" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock Text="{ui:Loc settings.appearance.start_color}" Foreground="{DynamicResource TextSecondary}" FontSize="11.5" Margin="0,0,0,4" />
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="26" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
+                                                <Border x:Name="CustomStartDot" Width="20" Height="20" CornerRadius="10" HorizontalAlignment="Left" VerticalAlignment="Center" />
+                                                <TextBox x:Name="CustomStartBox" Grid.Column="1" TextChanged="CustomColorHex_TextChanged" />
+                                            </Grid>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="{ui:Loc settings.appearance.end_color}" Foreground="{DynamicResource TextSecondary}" FontSize="11.5" Margin="0,0,0,4" />
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="26" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
+                                                <Border x:Name="CustomEndDot" Width="20" Height="20" CornerRadius="10" HorizontalAlignment="Left" VerticalAlignment="Center" />
+                                                <TextBox x:Name="CustomEndBox" Grid.Column="1" TextChanged="CustomColorHex_TextChanged" />
+                                            </Grid>
+                                        </StackPanel>
+                                    </Grid>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource SettingsCard}">
+                            <StackPanel>
+                                <TextBlock Text="{ui:Loc settings.appearance.dimensions_title}" Style="{StaticResource CardTitle}" Margin="0,0,0,10" />
+
+                                <Grid Margin="0,5">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="180" /><ColumnDefinition Width="*" /><ColumnDefinition Width="48" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{ui:Loc settings.appearance.width_collapsed}" VerticalAlignment="Center" />
+                                    <Slider x:Name="S1" Grid.Column="1" Minimum="100" Maximum="400" TickFrequency="1"
+                                            IsSnapToTickEnabled="True" Value="{Binding CollapsedWidth, Mode=TwoWay}" />
+                                    <TextBlock Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondary}"
+                                               Text="{Binding Value, ElementName=S1, StringFormat={}{0:0}}" />
+                                </Grid>
+
+                                <Grid Margin="0,5">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="180" /><ColumnDefinition Width="*" /><ColumnDefinition Width="48" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{ui:Loc settings.appearance.height_collapsed}" VerticalAlignment="Center" />
+                                    <Slider x:Name="S2" Grid.Column="1" Minimum="20" Maximum="60" TickFrequency="1"
+                                            IsSnapToTickEnabled="True" Value="{Binding CollapsedHeight, Mode=TwoWay}" />
+                                    <TextBlock Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondary}"
+                                               Text="{Binding Value, ElementName=S2, StringFormat={}{0:0}}" />
+                                </Grid>
+
+                                <Grid Margin="0,5">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="180" /><ColumnDefinition Width="*" /><ColumnDefinition Width="48" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{ui:Loc settings.appearance.width_expanded}" VerticalAlignment="Center" />
+                                    <Slider x:Name="S3" Grid.Column="1" Minimum="300" Maximum="1000" TickFrequency="10"
+                                            IsSnapToTickEnabled="True" Value="{Binding ExpandedWidth, Mode=TwoWay}" />
+                                    <TextBlock Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondary}"
+                                               Text="{Binding Value, ElementName=S3, StringFormat={}{0:0}}" />
+                                </Grid>
+
+                                <Grid Margin="0,5">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="180" /><ColumnDefinition Width="*" /><ColumnDefinition Width="48" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{ui:Loc settings.appearance.height_expanded}" VerticalAlignment="Center" />
+                                    <Slider x:Name="S4" Grid.Column="1" Minimum="120" Maximum="600" TickFrequency="10"
+                                            IsSnapToTickEnabled="True" Value="{Binding ExpandedHeight, Mode=TwoWay}" />
+                                    <TextBlock Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondary}"
+                                               Text="{Binding Value, ElementName=S4, StringFormat={}{0:0}}" />
+                                </Grid>
+
+                                <Grid Margin="0,5">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="180" /><ColumnDefinition Width="*" /><ColumnDefinition Width="48" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{ui:Loc settings.appearance.corner_radius}" VerticalAlignment="Center" />
+                                    <Slider x:Name="S5" Grid.Column="1" Minimum="0" Maximum="40" TickFrequency="1"
+                                            IsSnapToTickEnabled="True" Value="{Binding CornerRadius, Mode=TwoWay}" />
+                                    <TextBlock Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondary}"
+                                               Text="{Binding Value, ElementName=S5, StringFormat={}{0:0}}" />
+                                </Grid>
+
+                                <Border Height="1" Background="{DynamicResource DividerBg}" Margin="0,12" />
+                                <CheckBox Content="{ui:Loc settings.appearance.animations_enable}" IsChecked="{Binding AnimationsEnabled, Mode=TwoWay}" />
+
+                                <Grid Margin="0,12,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="180" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{ui:Loc settings.appearance.framerate_label}" VerticalAlignment="Center" />
+                                    <ComboBox x:Name="FrameRateBox" Grid.Column="1" Width="220" HorizontalAlignment="Left" />
+                                </Grid>
+
+                                <Grid Margin="0,12,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="170" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{ui:Loc settings.appearance.anim_speed_label}" VerticalAlignment="Center" />
+                                    <ComboBox x:Name="AnimationSpeedBox" Grid.Column="1" Width="220" HorizontalAlignment="Left" />
+                                </Grid>
+                                <TextBlock Margin="0,6,0,0"
+                                           Style="{StaticResource MutedHint}"
+                                           Text="{ui:Loc settings.appearance.anim_speed_hint}" />
+
+                                <CheckBox Margin="0,10,0,0"
+                                          Content="{ui:Loc settings.appearance.adaptive_fps}"
+                                          IsChecked="{Binding AdaptiveFrameRate, Mode=TwoWay}" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- 2: Verhalten -->
+                    <StackPanel x:Name="Page2" Visibility="Collapsed">
+                        <TextBlock Text="{ui:Loc settings.behavior.title}" Style="{StaticResource PageTitle}" />
+
+                        <Border Style="{StaticResource SettingsCard}">
+                            <StackPanel>
+                                <TextBlock Text="{ui:Loc settings.behavior.interaction_title}" Style="{StaticResource CardTitle}" Margin="0,0,0,8" />
+                                <ComboBox x:Name="ModeBox" Width="280" HorizontalAlignment="Left" />
+
+                                <Border Height="1" Background="{DynamicResource DividerBg}" Margin="0,14" />
+
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="180" /><ColumnDefinition Width="*" /><ColumnDefinition Width="55" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{ui:Loc settings.behavior.hover_delay}" VerticalAlignment="Center" />
+                                    <Slider x:Name="S6" Grid.Column="1" Minimum="0" Maximum="1000" TickFrequency="10"
+                                            IsSnapToTickEnabled="True" Value="{Binding HoverDelayMs, Mode=TwoWay}" />
+                                    <TextBlock Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondary}"
+                                               Text="{Binding Value, ElementName=S6, StringFormat={}{0:0}}" />
+                                </Grid>
+
+                                <Border Height="1" Background="{DynamicResource DividerBg}" Margin="0,14" />
+                                <CheckBox Content="{ui:Loc settings.behavior.close_focus_loss}"
+                                          IsChecked="{Binding CloseOnFocusLoss, Mode=TwoWay}" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- 3: Vollbild -->
+                    <StackPanel x:Name="Page3" Visibility="Collapsed">
+                        <TextBlock Text="{ui:Loc settings.fullscreen.title}" Style="{StaticResource PageTitle}" />
+
+                        <Border Style="{StaticResource SettingsCard}">
+                            <StackPanel>
+                                <TextBlock Text="{ui:Loc settings.fullscreen.hide_title}" Style="{StaticResource CardTitle}" Margin="0,0,0,10" />
+                                <CheckBox Content="{ui:Loc settings.fullscreen.hide_exclusive}" IsChecked="{Binding HideOnExclusiveGame, Mode=TwoWay}" />
+                                <Border Height="1" Background="{DynamicResource DividerBg}" Margin="0,10" />
+                                <CheckBox Content="{ui:Loc settings.fullscreen.hide_borderless}" IsChecked="{Binding HideOnBorderless, Mode=TwoWay}" />
+                                <Border Height="1" Background="{DynamicResource DividerBg}" Margin="0,10" />
+                                <CheckBox Content="{ui:Loc settings.fullscreen.hide_video}" IsChecked="{Binding HideOnVideo, Mode=TwoWay}" />
+                                <Border Height="1" Background="{DynamicResource DividerBg}" Margin="0,10" />
+                                <CheckBox Content="{ui:Loc settings.fullscreen.hide_presentation}" IsChecked="{Binding HideOnPresentation, Mode=TwoWay}" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource SettingsCard}">
+                            <StackPanel>
+                                <TextBlock Text="{ui:Loc settings.fullscreen.exceptions_title}" Style="{StaticResource CardTitle}" />
+                                <TextBlock Style="{StaticResource MutedHint}" Margin="0,3,0,8"
+                                           Text="{ui:Loc settings.fullscreen.exceptions_hint}" />
+                                <ListBox x:Name="ExcludedList" Height="110" />
+                                <DockPanel Margin="0,10,0,0">
+                                    <Button DockPanel.Dock="Right" Style="{StaticResource SecondaryButton}" Content="{ui:Loc settings.fullscreen.remove}" Margin="8,0,0,0"
+                                            Click="RemoveExcluded_Click" />
+                                    <Button DockPanel.Dock="Right" Style="{StaticResource SecondaryButton}" Content="{ui:Loc settings.fullscreen.add}" Margin="8,0,0,0"
+                                            Click="AddExcluded_Click" />
+                                    <TextBox x:Name="ExcludedInput" />
+                                </DockPanel>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- 4: Monitore -->
+                    <StackPanel x:Name="Page4" Visibility="Collapsed">
+                        <TextBlock Text="{ui:Loc settings.monitors.title}" Style="{StaticResource PageTitle}" />
+
+                        <Border Style="{StaticResource SettingsCard}">
+                            <StackPanel>
+                                <CheckBox Content="{ui:Loc settings.monitors.show_all}"
+                                          IsChecked="{Binding ShowOnAllMonitors, Mode=TwoWay}" />
+                                <TextBlock Style="{StaticResource MutedHint}" Margin="0,8,0,0"
+                                           Text="{ui:Loc settings.monitors.show_all_hint}" />
+                            </StackPanel>
+                        </Border>
+
+                        <ItemsControl x:Name="MonitorList">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Style="{StaticResource SettingsCard}">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Title}" Style="{StaticResource CardTitle}" Margin="0,0,0,10" />
+                                            <CheckBox Content="{ui:Loc settings.monitors.show_on_monitor}"
+                                                      IsChecked="{Binding Enabled, Mode=TwoWay}" />
+                                            <Border Height="1" Background="{DynamicResource DividerBg}" Margin="0,10" />
+                                            <CheckBox Content="{ui:Loc settings.monitors.gaming_monitor}"
+                                                      IsChecked="{Binding IsGamingMonitor, Mode=TwoWay}" />
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+
+                    <!-- 5: Module -->
+                    <StackPanel x:Name="Page5" Visibility="Collapsed">
+                        <TextBlock Text="{ui:Loc settings.modules.title}" Style="{StaticResource PageTitle}" />
+                        <TextBlock Style="{StaticResource MutedHint}" Margin="0,-6,0,12"
+                                   Text="{ui:Loc settings.modules.hint}" />
+
+                        <Border Style="{StaticResource SettingsCard}">
+                            <ItemsControl x:Name="ModuleList">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <CheckBox Margin="0,6" Content="{Binding Title}"
+                                                  IsChecked="{Binding Enabled, Mode=TwoWay}" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- 6: Notch-Layout (modular: welche Information wo, getrennt für Ruhezustand und Hover) -->
+                    <StackPanel x:Name="Page6" Visibility="Collapsed">
+                        <TextBlock Text="{ui:Loc settings.layout.title}" Style="{StaticResource PageTitle}" />
+
+                        <Border Style="{StaticResource SettingsCard}">
+                            <StackPanel>
+                                <DockPanel LastChildFill="False" Margin="0,0,0,12">
+                                    <StackPanel x:Name="LayoutModeHost" DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center" />
+                                    <Button DockPanel.Dock="Right" Content="{ui:Loc settings.layout.reset_default}"
+                                            Style="{StaticResource SecondaryButton}" Padding="10,5" FontSize="11.5"
+                                            VerticalAlignment="Center" Click="ResetCurrentLayout_Click" />
+                                </DockPanel>
+
+                                <!-- Live-Vorschau: echtes Render-Objekt der Notch -->
+                                <Border Background="{DynamicResource MonitorPreviewBg}" CornerRadius="12" Height="76">
+                                    <Border x:Name="LayoutPreviewPill" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                            Height="32" Width="172" CornerRadius="16"
+                                            BorderBrush="{DynamicResource ControlBorder}" BorderThickness="1">
+                                        <Grid>
+                                            <ContentControl x:Name="LayoutPreviewHost" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            <TextBlock x:Name="LayoutPreviewEmpty" Text="{ui:Loc settings.layout.empty}" FontSize="11.5"
+                                                       Foreground="{DynamicResource TextSecondary}"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Grid>
+                                    </Border>
+                                </Border>
+                                <Grid x:Name="LayoutZoneSummaryGrid" Margin="0,10,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="8" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="8" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                </Grid>
+                                <TextBlock x:Name="LayoutHintText" Style="{StaticResource MutedHint}" Margin="0,8,0,0" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource SettingsCard}">
+                            <StackPanel>
+                                <TextBlock x:Name="LayoutRowsTitle" Text="{ui:Loc settings.layout.what_where_title}" Style="{StaticResource CardTitle}" />
+                                <TextBlock Style="{StaticResource MutedHint}" Margin="0,3,0,10"
+                                           Text="{ui:Loc settings.layout.what_where_hint}" />
+                                <StackPanel x:Name="LayoutRowsHost" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource SettingsCard}">
+                            <StackPanel>
+                                <CheckBox Content="{ui:Loc settings.layout.live_activities}"
+                                          IsChecked="{Binding LiveActivitiesEnabled, Mode=TwoWay}" />
+                                <TextBlock Style="{StaticResource MutedHint}" Margin="0,6,0,8"
+                                           Text="{ui:Loc settings.layout.live_activities_hint}" />
+                                <ItemsControl x:Name="LiveActivityList">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <CheckBox Margin="0,6" Content="{Binding Title}"
+                                                      IsChecked="{Binding Enabled, Mode=TwoWay}" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- 7: Privatsphäre -->
+                    <StackPanel x:Name="Page7" Visibility="Collapsed">
+                        <TextBlock Text="{ui:Loc settings.privacy.title}" Style="{StaticResource PageTitle}" />
+
+                        <Border Style="{StaticResource SettingsCard}">
+                            <StackPanel>
+                                <TextBlock Text="{ui:Loc settings.privacy.local_title}" Style="{StaticResource CardTitle}" />
+                                <TextBlock Style="{StaticResource MutedHint}" Margin="0,4,0,10"
+                                           Text="{ui:Loc settings.privacy.local_hint}" />
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Content="{ui:Loc settings.privacy.open_data_folder}" Style="{StaticResource SecondaryButton}"
+                                            Click="OpenDataFolder_Click" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource SettingsCard}">
+                            <StackPanel>
+                                <TextBlock Text="{ui:Loc settings.privacy.indicators_title}" Style="{StaticResource CardTitle}" />
+                                <CheckBox Margin="0,8,0,0" Content="{ui:Loc settings.privacy.camera_indicator}"
+                                          IsChecked="{Binding ShowCameraIndicator, Mode=TwoWay}" />
+                                <TextBlock Style="{StaticResource MutedHint}" Margin="0,3,0,0"
+                                           Text="{ui:Loc settings.privacy.camera_indicator_hint}" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource SettingsCard}">
+                            <StackPanel>
+                                <TextBlock Text="{ui:Loc settings.privacy.optin_title}" Style="{StaticResource CardTitle}" />
+                                <TextBlock Style="{StaticResource MutedHint}" Margin="0,3,0,12"
+                                           Text="{ui:Loc settings.privacy.optin_hint}" />
+
+                                <CheckBox x:Name="OptInWeatherBox" Content="{ui:Loc settings.privacy.weather_enable}" IsChecked="{Binding OptInWeather, Mode=TwoWay}" />
+                                <TextBlock Style="{StaticResource MutedHint}" Margin="0,3,0,8"
+                                           Text="{ui:Loc settings.privacy.weather_hint}" />
+                                <StackPanel Orientation="Horizontal" Margin="24,0,0,0">
+                                    <TextBlock Text="{ui:Loc settings.privacy.city_label}" VerticalAlignment="Center" Margin="0,0,8,0"
+                                               Foreground="{DynamicResource TextSecondary}" FontSize="12" />
+                                    <TextBox x:Name="WeatherCitiesBox" Width="240" Height="28" Padding="8,4" VerticalContentAlignment="Center"
+                                             ToolTip="{ui:Loc settings.privacy.city_tooltip}" />
+                                </StackPanel>
+
+                                <Border Height="1" Background="{DynamicResource DividerBg}" Margin="0,12" />
+
+                                <CheckBox Content="{ui:Loc settings.privacy.lyrics_enable}" IsChecked="{Binding OptInLyrics, Mode=TwoWay}" />
+                                <TextBlock Style="{StaticResource MutedHint}" Margin="0,3,0,0"
+                                           Text="{ui:Loc settings.privacy.lyrics_hint}" />
+
+                                <Border Height="1" Background="{DynamicResource DividerBg}" Margin="0,12" />
+
+                                <CheckBox Content="{ui:Loc settings.privacy.favicons_enable}" IsChecked="{Binding OptInFavicons, Mode=TwoWay}" />
+                                <TextBlock Style="{StaticResource MutedHint}" Margin="0,3,0,0"
+                                           Text="{ui:Loc settings.privacy.favicons_hint}" />
+
+                                <Border Height="1" Background="{DynamicResource DividerBg}" Margin="0,12" />
+
+                                <CheckBox Content="{ui:Loc settings.privacy.music_rec_enable}" IsChecked="{Binding OptInMusicRecognition, Mode=TwoWay}" />
+                                <TextBlock Style="{StaticResource MutedHint}" Margin="0,3,0,0"
+                                           Text="{ui:Loc settings.privacy.music_rec_hint}" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- 8: Mitteilungen & App-Filter -->
+                    <StackPanel x:Name="Page8" Visibility="Collapsed">
+                        <TextBlock Text="{ui:Loc settings.notifications.title}" Style="{StaticResource PageTitle}" />
+
+                        <Border Style="{StaticResource SettingsCard}">
+                            <StackPanel>
+                                <TextBlock Text="{ui:Loc settings.notifications.sound_title}" Style="{StaticResource CardTitle}" Margin="0,0,0,8" />
+                                <CheckBox Content="{ui:Loc settings.notifications.sound_enable}"
+                                          IsChecked="{Binding NotificationSoundEnabled, Mode=TwoWay}" />
+                                <DockPanel LastChildFill="False" Margin="0,10,0,0">
+                                    <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center" MaxWidth="270">
+                                        <TextBlock Text="{ui:Loc settings.notifications.custom_sound_title}" Style="{StaticResource CardTitle}" FontSize="12.5" />
+                                        <TextBlock x:Name="NotificationSoundPathText" Style="{StaticResource MutedHint}" Margin="0,2,0,0"
+                                                   Text="{ui:Loc settings.notifications.default_sound}" />
+                                    </StackPanel>
+                                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Button Content="{ui:Loc settings.notifications.choose}" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0"
+                                                Click="PickNotificationSound_Click" />
+                                        <Button Content="{ui:Loc settings.notifications.default_btn}" Style="{StaticResource SecondaryButton}"
+                                                Click="ResetNotificationSound_Click" />
+                                    </StackPanel>
+                                </DockPanel>
+                                <Border Height="1" Background="{DynamicResource DividerBg}" Margin="0,12" />
+                                <DockPanel LastChildFill="False">
+                                    <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center" MaxWidth="310">
+                                        <TextBlock Text="{ui:Loc settings.notifications.notch_only_title}" Style="{StaticResource CardTitle}" />
+                                        <TextBlock Style="{StaticResource MutedHint}" Margin="0,3,0,0"
+                                                   Text="{ui:Loc settings.notifications.notch_only_hint}" />
+                                    </StackPanel>
+                                    <Button Content="{ui:Loc settings.notifications.windows_dnd_btn}" DockPanel.Dock="Right"
+                                            Style="{StaticResource SecondaryButton}" VerticalAlignment="Center"
+                                            Click="OpenWindowsDnd_Click" />
+                                </DockPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource SettingsCard}">
+                            <StackPanel>
+                                <TextBlock Text="{ui:Loc settings.notifications.app_filter_title}" Style="{StaticResource CardTitle}" Margin="0,0,0,4" />
+                                <TextBlock Style="{StaticResource MutedHint}" Margin="0,0,0,10"
+                                           Text="{ui:Loc settings.notifications.app_filter_hint}" />
+                                <ItemsControl x:Name="NotificationAppFilterList">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <CheckBox Margin="0,6" Content="{Binding Title}"
+                                                      IsChecked="{Binding Enabled, Mode=TwoWay}" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <TextBlock x:Name="NotificationFilterEmptyHint" Style="{StaticResource MutedHint}" Margin="0,4,0,0"
+                                           Text="{ui:Loc settings.notifications.app_filter_empty}"
+                                           Visibility="Collapsed" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+            </ScrollViewer>
+        </DockPanel>
+    </Grid>
+</UserControl>

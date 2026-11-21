@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore tests/WindowsNotch.Tests/WindowsNotch.Tests.csproj
+
+      - name: Build main application
+        run: dotnet build WindowsNotch.csproj --no-restore -v q
+
+      - name: Run unit tests
+        run: dotnet test tests/WindowsNotch.Tests/WindowsNotch.Tests.csproj --no-restore --verbosity normal
