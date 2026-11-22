@@ -193,28 +193,29 @@ namespace WindowsNotch.Modules.SongRecognition
                 {
                     double re = fftBuf[b].Real;
                     double im = fftBuf[b].Imaginary;
-                    mags[b] = Math.Log(Math.Max(1e-10, re * re + im * im));
+                    // SongRec/Shazam Energie-Skalierung: (re^2 + im^2) / 2^17
+                    mags[b] = (re * re + im * im) / 131072.0;
                 }
                 magSpectrogram[f] = mags;
             }
 
-            var bandPeaks = new List<(int Stripe, int Bin, double Mag)>[Bands.Length];
+            var bandPeaks = new List<(int Stripe, double Bin, double Mag)>[Bands.Length];
             for (int b = 0; b < Bands.Length; b++)
-                bandPeaks[b] = new List<(int, int, double)>();
+                bandPeaks[b] = new List<(int, double, double)>();
 
-            // Lokale Maxima in Zeit (±2 Frames) & Frequenz (±3 Bins) extrahieren
+            // Lokale Maxima in Zeit (±2 Frames) & Frequenz (±3 Bins) + parabolische Bin-Interpolation
             for (int t = 12; t < numFrames - 4; t++)
             {
                 for (int bandIdx = 0; bandIdx < Bands.Length; bandIdx++)
                 {
                     var (minBin, maxBin) = Bands[bandIdx];
-                    double bestMag = 6.5; // Mindestschwelle gegen Rauschen
+                    double bestEnergy = 1.0 / 64.0;
                     int bestBin = -1;
 
                     for (int bin = minBin; bin < maxBin; bin++)
                     {
                         double val = magSpectrogram[t][bin];
-                        if (val <= bestMag) continue;
+                        if (val <= bestEnergy) continue;
 
                         bool isPeak = true;
                         for (int dt = -2; dt <= 2 && isPeak; dt++)
@@ -232,13 +233,22 @@ namespace WindowsNotch.Modules.SongRecognition
 
                         if (isPeak)
                         {
-                            bestMag = val;
+                            bestEnergy = val;
                             bestBin = bin;
                         }
                     }
 
-                    if (bestBin >= 0)
-                        bandPeaks[bandIdx].Add((t, bestBin, bestMag));
+                    if (bestBin > 0 && bestBin + 1 < FftSize / 2)
+                    {
+                        double y0 = Math.Log(Math.Max(1.0 / 64.0, magSpectrogram[t][bestBin - 1]));
+                        double y1 = Math.Log(Math.Max(1.0 / 64.0, magSpectrogram[t][bestBin]));
+                        double y2 = Math.Log(Math.Max(1.0 / 64.0, magSpectrogram[t][bestBin + 1]));
+                        double denom = y0 - 2.0 * y1 + y2;
+                        double shift = Math.Abs(denom) > 1e-9 ? Math.Clamp(0.5 * (y0 - y2) / denom, -0.5, 0.5) : 0.0;
+                        double shazamMag = y1 * 1477.3 + 6144.0;
+                        if (shazamMag > 0)
+                            bandPeaks[bandIdx].Add((t, bestBin + shift, shazamMag));
+                    }
                 }
             }
 
@@ -264,8 +274,8 @@ namespace WindowsNotch.Modules.SongRecognition
                                 delta = 0;
                             }
                             cw.Write((byte)delta);
-                            ushort scaledMag = (ushort)Math.Clamp((int)(mag * 1400.0), 1, 65535);
-                            ushort scaledFreq = (ushort)Math.Clamp(bin * 32, 0, 65535);
+                            ushort scaledMag = (ushort)Math.Clamp((int)Math.Round(mag), 1, 65535);
+                            ushort scaledFreq = (ushort)Math.Clamp((int)Math.Round(bin * 64.0), 0, 65535);
                             cw.Write(scaledMag);
                             cw.Write(scaledFreq);
                             lastStripe = stripe;

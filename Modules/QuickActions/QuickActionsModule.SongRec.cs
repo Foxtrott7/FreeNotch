@@ -290,18 +290,11 @@ namespace WindowsNotch.Modules.QuickActions
                 Height = 76,
                 CornerRadius = new CornerRadius(NotchDesign.RadiusInner),
                 Background = NotchDesign.CreateSoftAccentTileBrush(0x22),
-                ClipToBounds = true,
                 Child = NotchDesign.CreateVectorIcon(NotchIconKind.Music, 28, NotchDesign.AccentPrimaryBrush, 1.9)
             };
 
             if (!string.IsNullOrWhiteSpace(res.CoverUrl))
-            {
                 _ = LoadRemoteCoverAsync(res.CoverUrl, coverBox);
-            }
-            else if (MediaPlayerService.Instance.Cover is ImageSource localCover)
-            {
-                coverBox.Child = new Image { Source = localCover, Stretch = Stretch.UniformToFill };
-            }
 
             Grid.SetColumn(coverBox, 0);
             infoGrid.Children.Add(coverBox);
@@ -405,18 +398,12 @@ namespace WindowsNotch.Modules.QuickActions
                     bmp.DecodePixelWidth = 160;
                     bmp.EndInit();
                     bmp.Freeze();
-                    coverBox.Child = new Image { Source = bmp, Stretch = Stretch.UniformToFill };
+                    coverBox.Child = null;
+                    coverBox.Background = new ImageBrush(bmp) { Stretch = Stretch.UniformToFill };
                 });
             }
             catch
             {
-                if (MediaPlayerService.Instance.Cover is ImageSource localCover)
-                {
-                    await Application.Current.Dispatcher.InvokeAsync(() =>
-                    {
-                        coverBox.Child = new Image { Source = localCover, Stretch = Stretch.UniformToFill };
-                    });
-                }
             }
         }
 

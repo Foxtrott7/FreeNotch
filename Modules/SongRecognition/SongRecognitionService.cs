@@ -18,8 +18,7 @@ namespace WindowsNotch.Modules.SongRecognition
         string Source = "");
 
     /// <summary>
-    /// Erkennt laufende Musik über Systemaudio-Loopback-Fingerprinting (Shazam-Discovery)
-    /// mit Fallback auf aktive Windows-Medien-Sessions (GSMTC) – strikt Opt-in.
+    /// Erkennt laufende Musik ausschließlich über Systemaudio-Loopback-Fingerprinting (Shazam-Discovery) – strikt Opt-in.
     /// </summary>
     public static class SongRecognitionService
     {
@@ -38,7 +37,7 @@ namespace WindowsNotch.Modules.SongRecognition
             }
 
             var (samples16k, peakRms) = await AudioLoopbackCapture.CaptureAsync(
-                TimeSpan.FromSeconds(3.6),
+                TimeSpan.FromSeconds(4.5),
                 onLevel,
                 ct);
 
@@ -55,7 +54,6 @@ namespace WindowsNotch.Modules.SongRecognition
                     L.T("songrec.no_audio"));
             }
 
-            // 1. Primär: Shazam-Audio-Fingerprint (funktioniert auch bei Browser/YouTube/Radio ohne GSMTC)
             try
             {
                 var shazam = await ShazamClient.RecognizeAsync(samples16k, ct);
@@ -82,25 +80,6 @@ namespace WindowsNotch.Modules.SongRecognition
             catch (Exception ex)
             {
                 App.LogError(ex);
-            }
-
-            // 2. Fallback: Aktive Windows-Medien-Session (GSMTC)
-            var mp = MediaPlayerService.Instance;
-            if (mp.HasKnownTrack && !string.IsNullOrWhiteSpace(mp.TrackTitle))
-            {
-                TriggerLyricsIfEnabled(mp.TrackTitle, mp.Artist, mp.AlbumTitle);
-                string query = Uri.EscapeDataString(string.IsNullOrWhiteSpace(mp.Artist) ? mp.TrackTitle : $"{mp.Artist} {mp.TrackTitle}");
-                return new SongRecognitionResult(
-                    true,
-                    mp.TrackTitle,
-                    mp.Artist,
-                    mp.AlbumTitle,
-                    L.T("songrec.found_and_lyrics"),
-                    string.Empty,
-                    $"https://open.spotify.com/search/{query}",
-                    $"https://music.apple.com/search?term={query}",
-                    string.Empty,
-                    "Windows Media");
             }
 
             return new SongRecognitionResult(
