@@ -161,7 +161,7 @@ CREATE TABLE IF NOT EXISTS dashboard_notes (
                 cmd.CommandText = @"
 SELECT id, file_path, file_name, file_size, is_directory, added_at, is_pinned
 FROM file_tray_items
-ORDER BY is_pinned DESC, added_at DESC;";
+ORDER BY is_pinned DESC, added_at ASC;";
 
                 using var reader = cmd.ExecuteReader();
                 while (reader.Read())

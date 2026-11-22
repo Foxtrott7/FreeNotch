@@ -30,6 +30,8 @@ namespace WindowsNotch.Modules.FileTray
         private readonly object _lock = new();
         private Panel? _listPanel;
         private Border? _dropContainer;
+        private bool _isFilePickerOpen;
+        private DateTime _filePickerCooldownUntilUtc = DateTime.MinValue;
 
         public override string Id => "filetray";
         public override string Title => "File Tray";
@@ -147,11 +149,12 @@ namespace WindowsNotch.Modules.FileTray
 
         public override FrameworkElement CreateExpandedView()
         {
-            // Direkt auf dem Notch-Hintergrund ohne Kopfzeile oder Karten-Box (wie Desktop-Ablage)
+            // Direkt auf dem Notch-Hintergrund ohne Kopfzeile oder Karten-Box (wie Desktop-Ablage),
+            // feste 5-Spalten-Breite damit Einträge von links nach rechts aufgefüllt werden
             _listPanel = new WrapPanel
             {
                 Orientation = Orientation.Horizontal,
-                MaxWidth = 524,
+                Width = 520,
                 HorizontalAlignment = HorizontalAlignment.Center,
                 Margin = new Thickness(0, 4, 0, 4)
             };
@@ -237,14 +240,27 @@ namespace WindowsNotch.Modules.FileTray
 
         private void OpenFilePicker()
         {
-            var dlg = new OpenFileDialog
+            if (_isFilePickerOpen || DateTime.UtcNow < _filePickerCooldownUntilUtc)
+                return;
+
+            _isFilePickerOpen = true;
+            try
             {
-                Title = L.T("filetray.picker_title"),
-                Multiselect = true
-            };
-            if (dlg.ShowDialog() == true && dlg.FileNames.Length > 0)
+                var dlg = new OpenFileDialog
+                {
+                    Title = L.T("filetray.picker_title"),
+                    Multiselect = true
+                };
+                if (dlg.ShowDialog() == true && dlg.FileNames.Length > 0)
+                {
+                    AddFiles(dlg.FileNames);
+                }
+            }
+            finally
             {
-                AddFiles(dlg.FileNames);
+                _isFilePickerOpen = false;
+                // Kurzer Cooldown verhindert sofortiges Wiederöffnen beim Doppelklick über dem FileTray
+                _filePickerCooldownUntilUtc = DateTime.UtcNow.AddSeconds(1);
             }
         }
 
