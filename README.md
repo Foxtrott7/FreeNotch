@@ -88,6 +88,14 @@ dotnet test tests/WindowsNotch.Tests/WindowsNotch.Tests.csproj
 
 ---
 
+## Known Issues & Limitations
+
+- **Music Recognition (Shazam)**: Currently not matching songs reliably across apps/audio streams — fixing the audio fingerprinting pipeline is the top priority for the next patch release.
+- **Unsigned Executables (Pending Approval)**: While the SignPath Foundation application is under review, release binaries are unsigned and may trigger a Windows SmartScreen prompt on first launch (verify checksums via `SHA256SUMS.txt`).
+- **System Limits**: Bluetooth battery reporting depends on the device's Windows driver; Windows notification listening uses a 500 ms polling fallback when running unpackaged.
+
+---
+
 ## Contributing & License
 
 - Bug reports and pull requests are welcome on [GitHub](https://github.com/Foxtrott7/FreeNotch). Please keep changes focused, bilingual (`en.json` & `de.json`), and covered by `dotnet test`.

@@ -11,7 +11,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <RootNamespace>WindowsNotch</RootNamespace>
     <AssemblyName>FreeNotch</AssemblyName>
-    <Version>1.0.1</Version>
+    <Version>1.0.2</Version>
     <SatelliteResourceLanguages>de;en</SatelliteResourceLanguages>
     <AssemblyTitle>FreeNotch</AssemblyTitle>
     <Product>FreeNotch</Product>

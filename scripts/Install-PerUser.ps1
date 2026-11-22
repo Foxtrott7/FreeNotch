@@ -44,7 +44,7 @@ $Shortcut.Save()
 
 # Version aus PE-Metadaten lesen
 $Version = (Get-Item -LiteralPath $TargetExe).VersionInfo.ProductVersion
-if ([string]::IsNullOrWhiteSpace($Version)) { $Version = '1.0.1' }
+if ([string]::IsNullOrWhiteSpace($Version)) { $Version = '1.0.2' }
 $Version = ($Version -split '\+')[0]
 
 # Deinstallation unter "Einstellungen -> Apps" (HKCU, ohne Adminrechte) registrieren
