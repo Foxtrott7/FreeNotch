@@ -308,7 +308,8 @@
                                     Click="Power_Click">
                                 <Viewbox Width="15" Height="15" Stretch="Uniform">
                                     <Grid Width="24" Height="24">
-                                        <Path Data="M 12,3 L 12,12 M 18.36,6.64 A 9,9 0 1 1 5.64,6.64"
+                                        <Path x:Name="PowerIconPath"
+                                              Data="M 12,3 L 12,12 M 18.36,6.64 A 9,9 0 1 1 5.64,6.64"
                                               Stroke="{DynamicResource TabForeground}"
                                               StrokeThickness="1.85"
                                               StrokeLineJoin="Round"

@@ -24,6 +24,8 @@ namespace WindowsNotch.UI
         // Größe der In-Notch-Einstellungen; das Fenster wird mindestens so groß (sonst wird der Inhalt abgeschnitten)
         private const double SettingsWidth = 640;
         private const double SettingsHeight = 440;
+        private const double PowerMenuWidth = 300;
+        private const double PowerMenuHeight = 236;
 
         private readonly ModuleHost _moduleHost;
         private NotchState _state = NotchState.Collapsed;
@@ -427,9 +429,11 @@ namespace WindowsNotch.UI
                 _fileTrayAutoCloseTimer.Stop();
                 _tabJiggleController?.ExitJiggleMode();
                 _isSettingsOpen = false;
+                _isPowerMenuOpen = false;
                 _isOnboardingOpen = false;
                 StopTourInternal();
                 UpdateSettingsButtonState();
+                UpdatePowerButtonState();
             }
 
             bool hasLive = false;
@@ -476,19 +480,28 @@ namespace WindowsNotch.UI
                 : NotchDesign.CreateEaseInOut();
 
             if (target == NotchState.Expanded)
+            {
                 ExpandedPanel.Visibility = Visibility.Visible;
+                ExpandedHost.BeginAnimation(OpacityProperty, null);
+                ExpandedHost.Opacity = 1.0;
+                ExpandedHost.RenderTransform = Transform.Identity;
+            }
 
             ApplyDockStyle();
             NotchBorder.BeginAnimation(WidthProperty, CreateAnim(w, duration, ease, activeTransition: true));
             NotchBorder.BeginAnimation(HeightProperty, CreateAnim(h, duration, ease, activeTransition: true));
 
-            int fadeMs = opening ? NotchDesign.MicroTransitionMs : Math.Max(140, NotchDesign.CollapseDurationMs - 40);
-            var fadeEase = opening ? NotchDesign.CreateEaseOut() : NotchDesign.CreateEaseInOut();
+            int fadeMs = opening
+                ? NotchDesign.SpringOpenDurationMs
+                : Math.Max(130, (int)Math.Round(NotchDesign.CollapseDurationMs * 0.52));
+            var fadeEase = opening
+                ? NotchDesign.CreateEaseInOut()
+                : new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseIn };
             bool showPreview = target == NotchState.Preview || (target == NotchState.Collapsed && hasLive);
             PreviewHost.IsHitTestVisible = target != NotchState.Expanded;
             SetOpacity(PreviewHost, showPreview ? 1 : 0, 0, animate: true, activeTransition: true, durationMs: fadeMs, ease: fadeEase);
             SetOpacity(ExpandedPanel, target == NotchState.Expanded ? 1 : 0,
-                target == NotchState.Expanded ? 40 : 0, animate: true, activeTransition: true,
+                target == NotchState.Expanded ? 50 : 0, animate: true, activeTransition: true,
                 durationMs: fadeMs,
                 ease: fadeEase,
                 onCompleted: target != NotchState.Expanded ? () =>
@@ -693,7 +706,7 @@ namespace WindowsNotch.UI
                 })
                 .ToList();
 
-            if (tabModules.Count == 0 && !_isSettingsOpen)
+            if (tabModules.Count == 0 && !_isSettingsOpen && !_isPowerMenuOpen)
             {
                 EmptyModulesPanel.Visibility = Visibility.Visible;
                 ExpandedHost.Visibility = Visibility.Collapsed;
@@ -716,7 +729,7 @@ namespace WindowsNotch.UI
 
             foreach (var module in tabModules)
             {
-                bool isSel = !_isSettingsOpen && module == _selectedModule;
+                bool isSel = !_isSettingsOpen && !_isPowerMenuOpen && module == _selectedModule;
                 string modKey = $"module.{module.Id}";
                 string modTip = L.T(modKey);
                 if (modTip == modKey) modTip = module.Title;
@@ -753,11 +766,16 @@ namespace WindowsNotch.UI
             {
                 ShowSettingsInHost();
             }
+            else if (_isPowerMenuOpen)
+            {
+                ShowPowerMenuInHost();
+            }
             else if (_selectedModule != null)
             {
                 ExpandedHost.Content = _moduleHost.SafeCreateExpandedView(_selectedModule);
             }
             UpdateSettingsButtonState();
+            UpdatePowerButtonState();
             UpdateKeepExpandedCloseButton();
         }
 
@@ -802,7 +820,9 @@ namespace WindowsNotch.UI
                 : 0.0;
 
             _isSettingsOpen = false;
+            _isPowerMenuOpen = false;
             UpdateSettingsButtonState();
+            UpdatePowerButtonState();
             _selectedModule = module;
             if (!string.Equals(module.Id, "filetray", StringComparison.Ordinal))
                 _fileTrayAutoCloseTimer.Stop();
@@ -1033,6 +1053,8 @@ namespace WindowsNotch.UI
         public void OpenSettings()
         {
             _isOnboardingOpen = false;
+            _isPowerMenuOpen = false;
+            UpdatePowerButtonState();
             if (_state == NotchState.Expanded && _isSettingsOpen)
             {
                 CloseSettings();
@@ -1055,6 +1077,8 @@ namespace WindowsNotch.UI
         public void OpenOnboarding()
         {
             _isSettingsOpen = false;
+            _isPowerMenuOpen = false;
+            UpdatePowerButtonState();
             _isOnboardingOpen = true;
             if (_state != NotchState.Expanded)
             {
@@ -1288,7 +1312,9 @@ namespace WindowsNotch.UI
         {
             if (!_isSettingsOpen) return;
             _isSettingsOpen = false;
+            _isPowerMenuOpen = false;
             UpdateSettingsButtonState();
+            UpdatePowerButtonState();
 
             if (_state == NotchState.Expanded)
             {
@@ -1397,6 +1423,13 @@ namespace WindowsNotch.UI
                     return;
                 }
 
+                if (_isPowerMenuOpen)
+                {
+                    ClosePowerMenu();
+                    e.Handled = true;
+                    return;
+                }
+
                 if (_isSettingsOpen)
                 {
                     CloseSettings();
@@ -1415,15 +1448,15 @@ namespace WindowsNotch.UI
             }
         }
 
-        private const int FileTrayAutoCloseDelayMs = 3500;
+        private const int FileTrayAutoCloseDelayMs = 3000;
 
         // Klick außerhalb: Das Fenster verliert den Fokus
         private void Window_Deactivated(object? sender, EventArgs e)
         {
-            if (_state != NotchState.Expanded || !S.CloseOnFocusLoss || _isSettingsOpen || _isOnboardingOpen || _isTourActive || _powerPopup?.IsOpen == true || _selectedModule?.KeepExpanded == true)
+            if (_state != NotchState.Expanded || !S.CloseOnFocusLoss || _isSettingsOpen || _isOnboardingOpen || _isTourActive || _selectedModule?.KeepExpanded == true)
                 return;
 
-            // Beim File Tray kurze Gnadenfrist (3.5 s), damit man Explorer/Desktop öffnen & Dateien reinziehen kann
+            // Beim File Tray kurze Gnadenfrist (3 s), damit man Explorer/Desktop öffnen & Dateien reinziehen kann
             if (_selectedModule?.Id == "filetray")
             {
                 ScheduleFileTrayAutoClose(FileTrayAutoCloseDelayMs);
@@ -1444,7 +1477,7 @@ namespace WindowsNotch.UI
         {
             _fileTrayAutoCloseTimer.Stop();
             if (_state != NotchState.Expanded || _selectedModule?.Id != "filetray") return;
-            if (_isSettingsOpen || _isOnboardingOpen || _isTourActive || _powerPopup?.IsOpen == true) return;
+            if (_isSettingsOpen || _isPowerMenuOpen || _isOnboardingOpen || _isTourActive) return;
             if (IsActive && S.Mode != InteractionMode.HoverOnly) return;
             if (NotchBorder.IsMouseOver) return;
 

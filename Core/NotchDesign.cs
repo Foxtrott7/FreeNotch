@@ -1104,25 +1104,36 @@ namespace WindowsNotch.Core
         public static ContextMenu CreateContextMenu(params MenuItem[] items)
         {
             var template = new ControlTemplate(typeof(ContextMenu));
+
+            // Äußerer Container lässt Platz für den DropShadow, damit Rand & Ecken nicht am Popup-Fenster abgeschnitten werden
+            var root = new FrameworkElementFactory(typeof(Grid));
+            root.SetValue(FrameworkElement.MarginProperty, new Thickness(10));
+
+            var shadowLayer = new FrameworkElementFactory(typeof(Border));
+            shadowLayer.SetValue(Border.BackgroundProperty, NotchBackgroundBrush);
+            shadowLayer.SetValue(Border.CornerRadiusProperty, new CornerRadius(RadiusInner));
+            shadowLayer.SetValue(UIElement.EffectProperty, new System.Windows.Media.Effects.DropShadowEffect
+            {
+                Color = Colors.Black,
+                BlurRadius = 16,
+                ShadowDepth = 3,
+                Opacity = 0.6
+            });
+
             var border = new FrameworkElementFactory(typeof(Border));
             border.SetValue(Border.BackgroundProperty, NotchBackgroundBrush);
-            border.SetValue(Border.BorderBrushProperty, GetFrozenBrush(Color.FromArgb(0x28, 0xFF, 0xFF, 0xFF)));
+            border.SetValue(Border.BorderBrushProperty, GetFrozenBrush(Color.FromArgb(0x2E, 0xFF, 0xFF, 0xFF)));
             border.SetValue(Border.BorderThicknessProperty, new Thickness(1));
             border.SetValue(Border.CornerRadiusProperty, new CornerRadius(RadiusInner));
             border.SetValue(Border.PaddingProperty, new Thickness(5));
             border.SetValue(FrameworkElement.MinWidthProperty, 176.0);
-            border.SetValue(UIElement.SnapsToDevicePixelsProperty, true);
-            border.SetValue(UIElement.EffectProperty, new System.Windows.Media.Effects.DropShadowEffect
-            {
-                Color = Colors.Black,
-                BlurRadius = 18,
-                ShadowDepth = 4,
-                Opacity = 0.65
-            });
+            border.SetValue(UIElement.SnapsToDevicePixelsProperty, false);
 
             var presenter = new FrameworkElementFactory(typeof(ItemsPresenter));
             border.AppendChild(presenter);
-            template.VisualTree = border;
+            root.AppendChild(shadowLayer);
+            root.AppendChild(border);
+            template.VisualTree = root;
 
             var menu = new ContextMenu
             {
