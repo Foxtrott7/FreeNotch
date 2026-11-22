@@ -252,7 +252,7 @@ namespace WindowsNotch.Core
 
             _tray = new Forms.NotifyIcon
             {
-                Text = "Windows Notch",
+                Text = "FreeNotch",
                 ContextMenuStrip = menu
             };
             RefreshTrayIcon();

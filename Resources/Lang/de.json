@@ -38,8 +38,8 @@
   "settings.general.onboarding_start": "Einführung starten",
   "settings.general.export": "Exportieren…",
   "settings.general.import": "Importieren…",
-  "settings.general.export_dialog_title": "Windows Notch Einstellungen exportieren",
-  "settings.general.import_dialog_title": "Windows Notch Einstellungen importieren",
+  "settings.general.export_dialog_title": "FreeNotch Einstellungen exportieren",
+  "settings.general.import_dialog_title": "FreeNotch Einstellungen importieren",
   "settings.general.json_filter": "JSON-Dateien (*.json)|*.json|Alle Dateien (*.*)|*.*",
 
   "settings.appearance.title": "Darstellung",
@@ -148,7 +148,7 @@
 
   "settings.privacy.title": "Privatsphäre",
   "settings.privacy.local_title": "100 % Lokal & Ohne Telemetrie",
-  "settings.privacy.local_hint": "Windows Notch benötigt kein Benutzerkonto, enthält keine Werbung und sendet keinerlei Analysen oder Telemetrie. Alle Einstellungen und Fehlerprotokolle bleiben lokal auf deinem PC unter %AppData%\\WindowsNotch\\.",
+  "settings.privacy.local_hint": "FreeNotch benötigt kein Benutzerkonto, enthält keine Werbung und sendet keinerlei Analysen oder Telemetrie. Alle Einstellungen und Fehlerprotokolle bleiben lokal auf deinem PC unter %AppData%\\WindowsNotch\\.",
   "settings.privacy.open_data_folder": "Lokalen Daten- & Log-Ordner öffnen",
   "settings.privacy.indicators_title": "Datenschutzindikatoren",
   "settings.privacy.camera_indicator": "Kamera-Aktiv-Indikator oben rechts in der Notch anzeigen",
@@ -427,11 +427,11 @@
   "notifications.pick_sound_title": "Eigenen Benachrichtigungston wählen",
   "notifications.wav_filter": "WAV-Audio (*.wav)|*.wav",
 
-  "phonetransfer.web_title": "Windows Notch – Dateien",
+  "phonetransfer.web_title": "FreeNotch – Dateien",
   "phonetransfer.web_heading": "Auf Telefon übertragen",
   "phonetransfer.web_ready": "{0} Dateien bereit zum Download",
   "phonetransfer.web_download": "Laden",
-  "phonetransfer.web_send_title": "Windows Notch – An PC senden",
+  "phonetransfer.web_send_title": "FreeNotch – An PC senden",
   "phonetransfer.web_send_heading": "An PC senden",
   "phonetransfer.web_send_hint": "Dateien oder Fotos auswählen – landen direkt im Downloads-Ordner.",
   "phonetransfer.web_tap_select": "Tippen zum Auswählen",

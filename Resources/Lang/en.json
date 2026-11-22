@@ -38,8 +38,8 @@
   "settings.general.onboarding_start": "Start Setup",
   "settings.general.export": "Export…",
   "settings.general.import": "Import…",
-  "settings.general.export_dialog_title": "Export Windows Notch Settings",
-  "settings.general.import_dialog_title": "Import Windows Notch Settings",
+  "settings.general.export_dialog_title": "Export FreeNotch Settings",
+  "settings.general.import_dialog_title": "Import FreeNotch Settings",
   "settings.general.json_filter": "JSON Files (*.json)|*.json|All Files (*.*)|*.*",
 
   "settings.appearance.title": "Appearance",
@@ -148,7 +148,7 @@
 
   "settings.privacy.title": "Privacy",
   "settings.privacy.local_title": "100% Local & Zero Telemetry",
-  "settings.privacy.local_hint": "Windows Notch requires no account, contains no ads, and sends zero analytics or telemetry. All settings and error logs stay locally on your PC under %AppData%\\WindowsNotch\\.",
+  "settings.privacy.local_hint": "FreeNotch requires no account, contains no ads, and sends zero analytics or telemetry. All settings and error logs stay locally on your PC under %AppData%\\WindowsNotch\\.",
   "settings.privacy.open_data_folder": "Open local data & log folder",
   "settings.privacy.indicators_title": "Privacy Indicators",
   "settings.privacy.camera_indicator": "Show camera-active indicator at top right of the notch",
@@ -427,11 +427,11 @@
   "notifications.pick_sound_title": "Choose custom notification sound",
   "notifications.wav_filter": "WAV Audio (*.wav)|*.wav",
 
-  "phonetransfer.web_title": "Windows Notch – Files",
+  "phonetransfer.web_title": "FreeNotch – Files",
   "phonetransfer.web_heading": "Transfer to Phone",
   "phonetransfer.web_ready": "{0} files ready to download",
   "phonetransfer.web_download": "Download",
-  "phonetransfer.web_send_title": "Windows Notch – Send to PC",
+  "phonetransfer.web_send_title": "FreeNotch – Send to PC",
   "phonetransfer.web_send_heading": "Send to PC",
   "phonetransfer.web_send_hint": "Pick files or photos – saved straight to your Downloads folder.",
   "phonetransfer.web_tap_select": "Tap to select",

@@ -1,4 +1,4 @@
-name: Release Windows Notch
+name: Release FreeNotch
 
 on:
   push:
@@ -62,7 +62,7 @@ jobs:
             if (-not (Test-Path -LiteralPath $srcDir)) { continue }
             $dstDir = Join-Path $stageRoot $variant
             New-Item -ItemType Directory -Path $dstDir -Force | Out-Null
-            foreach ($file in @('WindowsNotch.exe', 'WindowsNotch.dll')) {
+            foreach ($file in @('FreeNotch.exe', 'FreeNotch.dll')) {
               Copy-Item -LiteralPath (Join-Path $srcDir $file) -Destination $dstDir -Force
             }
           }
@@ -82,7 +82,7 @@ jobs:
         with:
           api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
           organization-id: ${{ env.SIGNPATH_ORGANIZATION_ID }}
-          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG || 'windows-notch' }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG || 'freenotch' }}
           signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG || 'release-signing' }}
           github-artifact-id: ${{ steps.upload-unsigned.outputs.artifact-id }}
           wait-for-completion: true
@@ -96,7 +96,7 @@ jobs:
           foreach ($variant in @('win-x64-portable', 'win-x64-framework-dependent')) {
             $dstDir = Join-Path 'publish' $variant
             if (-not (Test-Path -LiteralPath $dstDir)) { continue }
-            foreach ($file in @('WindowsNotch.exe', 'WindowsNotch.dll')) {
+            foreach ($file in @('FreeNotch.exe', 'FreeNotch.dll')) {
               $signedFile = Join-Path (Join-Path 'publish/signed-signing' $variant) $file
               if (-not (Test-Path -LiteralPath $signedFile)) {
                 throw "Expected signed file missing: $signedFile"
@@ -124,6 +124,6 @@ jobs:
         with:
           generate_release_notes: true
           files: |
-            publish/WindowsNotch-v*-win-x64-portable.zip
-            publish/WindowsNotch-v*-win-x64-framework-dependent.zip
+            publish/FreeNotch-v*-win-x64-portable.zip
+            publish/FreeNotch-v*-win-x64-framework-dependent.zip
             publish/SHA256SUMS.txt

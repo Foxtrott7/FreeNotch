@@ -10,14 +10,14 @@
     <DefaultItemExcludes>$(DefaultItemExcludes);tests\**</DefaultItemExcludes>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <RootNamespace>WindowsNotch</RootNamespace>
-    <AssemblyName>WindowsNotch</AssemblyName>
+    <AssemblyName>FreeNotch</AssemblyName>
     <Version>1.0.1</Version>
     <SatelliteResourceLanguages>de;en</SatelliteResourceLanguages>
-    <AssemblyTitle>Windows Notch</AssemblyTitle>
-    <Product>Windows Notch</Product>
+    <AssemblyTitle>FreeNotch</AssemblyTitle>
+    <Product>FreeNotch</Product>
     <Description>Dynamic-Island-artige Notch für Windows 11</Description>
-    <Company>WindowsNotch</Company>
-    <Copyright>Copyright © 2026 WindowsNotch</Copyright>
+    <Company>FreeNotch</Company>
+    <Copyright>Copyright © 2026 FreeNotch</Copyright>
   </PropertyGroup>
 
   <ItemGroup>

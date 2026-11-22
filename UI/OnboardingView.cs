@@ -48,7 +48,7 @@ namespace WindowsNotch.UI
             titleRow.Children.Add(NotchDesign.CreateVectorIcon(NotchIconKind.Sparkle, 15, NotchDesign.AccentPrimaryBrush, 1.9));
             titleRow.Children.Add(new TextBlock
             {
-                Text = "Windows Notch",
+                Text = "FreeNotch",
                 Foreground = NotchDesign.TextPrimaryBrush,
                 FontFamily = NotchDesign.UiDisplayFont,
                 FontWeight = FontWeights.Bold,

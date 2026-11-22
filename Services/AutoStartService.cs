@@ -38,7 +38,7 @@ namespace WindowsNotch.Services
             string? exe = Environment.ProcessPath;
             // Bei "dotnet run" ist der Prozess dotnet.exe, dann die eigene EXE verwenden
             if (exe == null || Path.GetFileNameWithoutExtension(exe).Equals("dotnet", StringComparison.OrdinalIgnoreCase))
-                exe = Path.Combine(AppContext.BaseDirectory, "WindowsNotch.exe");
+                exe = Path.Combine(AppContext.BaseDirectory, "FreeNotch.exe");
             return exe;
         }
     }

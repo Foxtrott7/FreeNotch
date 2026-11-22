@@ -1,4 +1,4 @@
-# Windows Notch
+# FreeNotch
 
 A Dynamic Island-style notch for Windows 11 written in C# and WPF (.NET 10).
 
@@ -12,17 +12,17 @@ A Dynamic Island-style notch for Windows 11 written in C# and WPF (.NET 10).
 
 ## Privacy
 
-Everything runs locally with no accounts, ads, or telemetry. Settings, logs, and clipboard/notification databases stay in `%AppData%\WindowsNotch\`.
+Everything runs locally with no accounts, ads, or telemetry. Settings, logs, and local databases stay on your PC in `%AppData%\WindowsNotch\`.
 
-Online features (weather, lyrics, website favicons, finance quotes, temporary phone-transfer uploads) are **off by default** and only connect if you explicitly turn them on.
+Online features (weather, lyrics, website favicons, finance quotes, temporary phone-transfer uploads) are **off by default** and only connect if you explicitly turn them on. See [PRIVACY.md](PRIVACY.md) for details.
 
 ## Download & Install
 
 No admin rights required.
 
-1. Download **`WindowsNotch-v*-win-x64-portable.zip`** from [Releases](https://github.com/Foxtrott7/WindowsNotch/releases) (or `framework-dependent.zip` if you already have the .NET 10 Desktop Runtime).
+1. Download **`FreeNotch-v*-win-x64-portable.zip`** from [Releases](https://github.com/Foxtrott7/FreeNotch/releases) (or `framework-dependent.zip` if you already have the .NET 10 Desktop Runtime).
 2. Extract the ZIP.
-3. Run `WindowsNotch.exe` directly, or run `Install.cmd` to install to `%LocalAppData%\Programs\WindowsNotch` with a Start Menu entry.
+3. Run `FreeNotch.exe` directly, or run `Install.cmd` to install to `%LocalAppData%\Programs\FreeNotch` with a Start Menu entry.
 
 Checksums are in `SHA256SUMS.txt`.
 

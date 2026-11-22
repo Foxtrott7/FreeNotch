@@ -37,10 +37,10 @@ $InstallerFiles = @(
 )
 
 $Variants = @(
-    @{ Name = 'win-x64-portable'; SelfContained = $true; Zip = "WindowsNotch-v$Version-win-x64-portable.zip" }
+    @{ Name = 'win-x64-portable'; SelfContained = $true; Zip = "FreeNotch-v$Version-win-x64-portable.zip" }
 )
 if (-not $SkipFrameworkDependent) {
-    $Variants += @{ Name = 'win-x64-framework-dependent'; SelfContained = $false; Zip = "WindowsNotch-v$Version-win-x64-framework-dependent.zip" }
+    $Variants += @{ Name = 'win-x64-framework-dependent'; SelfContained = $false; Zip = "FreeNotch-v$Version-win-x64-framework-dependent.zip" }
 }
 
 if (-not $PackageOnly) {

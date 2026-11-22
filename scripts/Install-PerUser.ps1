@@ -5,18 +5,18 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $SourceDir = $PSScriptRoot
-$SourceExe = Join-Path $SourceDir 'WindowsNotch.exe'
+$SourceExe = Join-Path $SourceDir 'FreeNotch.exe'
 if (-not (Test-Path -LiteralPath $SourceExe)) {
-    throw "WindowsNotch.exe wurde in '$SourceDir' nicht gefunden."
+    throw "FreeNotch.exe wurde in '$SourceDir' nicht gefunden."
 }
 
-$TargetDir = Join-Path $env:LOCALAPPDATA 'Programs\WindowsNotch'
-$TargetExe = Join-Path $TargetDir 'WindowsNotch.exe'
+$TargetDir = Join-Path $env:LOCALAPPDATA 'Programs\FreeNotch'
+$TargetExe = Join-Path $TargetDir 'FreeNotch.exe'
 
-Write-Host 'Installiere Windows Notch (Benutzerkontext, ohne Adminrechte)...'
+Write-Host 'Installiere FreeNotch (Benutzerkontext, ohne Adminrechte)...'
 
 # Laufende Instanz sauber beenden, damit Dateien ersetzt werden koennen
-$running = Get-Process -Name 'WindowsNotch' -ErrorAction SilentlyContinue
+$running = Get-Process -Name 'FreeNotch', 'WindowsNotch' -ErrorAction SilentlyContinue
 if ($running) {
     $running | Stop-Process -Force -ErrorAction SilentlyContinue
     Start-Sleep -Milliseconds 600
@@ -33,26 +33,26 @@ Get-ChildItem -LiteralPath $SourceDir -Force | Where-Object {
 
 # Startmenue-Verknuepfung im Benutzerprofil anlegen
 $StartMenuDir = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs'
-$ShortcutPath = Join-Path $StartMenuDir 'Windows Notch.lnk'
+$ShortcutPath = Join-Path $StartMenuDir 'FreeNotch.lnk'
 $WshShell = New-Object -ComObject WScript.Shell
 $Shortcut = $WshShell.CreateShortcut($ShortcutPath)
 $Shortcut.TargetPath = $TargetExe
 $Shortcut.WorkingDirectory = $TargetDir
 $Shortcut.IconLocation = "$TargetExe,0"
-$Shortcut.Description = 'Windows Notch'
+$Shortcut.Description = 'FreeNotch'
 $Shortcut.Save()
 
 # Version aus PE-Metadaten lesen
 $Version = (Get-Item -LiteralPath $TargetExe).VersionInfo.ProductVersion
-if ([string]::IsNullOrWhiteSpace($Version)) { $Version = '1.0.0' }
+if ([string]::IsNullOrWhiteSpace($Version)) { $Version = '1.0.1' }
 $Version = ($Version -split '\+')[0]
 
 # Deinstallation unter "Einstellungen -> Apps" (HKCU, ohne Adminrechte) registrieren
-$UninstallKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\WindowsNotch'
+$UninstallKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\FreeNotch'
 New-Item -Path $UninstallKey -Force | Out-Null
-Set-ItemProperty -Path $UninstallKey -Name 'DisplayName' -Value 'Windows Notch'
+Set-ItemProperty -Path $UninstallKey -Name 'DisplayName' -Value 'FreeNotch'
 Set-ItemProperty -Path $UninstallKey -Name 'DisplayVersion' -Value $Version
-Set-ItemProperty -Path $UninstallKey -Name 'Publisher' -Value 'WindowsNotch'
+Set-ItemProperty -Path $UninstallKey -Name 'Publisher' -Value 'FreeNotch'
 Set-ItemProperty -Path $UninstallKey -Name 'InstallLocation' -Value $TargetDir
 Set-ItemProperty -Path $UninstallKey -Name 'DisplayIcon' -Value "$TargetExe,0"
 $UninstallScript = Join-Path $TargetDir 'Uninstall-PerUser.ps1'

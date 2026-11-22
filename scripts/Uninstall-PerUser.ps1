@@ -4,14 +4,14 @@ param(
 
 $ErrorActionPreference = 'SilentlyContinue'
 
-$TargetDir = Join-Path $env:LOCALAPPDATA 'Programs\WindowsNotch'
-$StartMenuShortcut = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\Windows Notch.lnk'
+$TargetDir = Join-Path $env:LOCALAPPDATA 'Programs\FreeNotch'
+$StartMenuShortcut = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\FreeNotch.lnk'
 $RunKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
-$UninstallKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\WindowsNotch'
+$UninstallKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\FreeNotch'
 
-Write-Host 'Deinstalliere Windows Notch...'
+Write-Host 'Deinstalliere FreeNotch...'
 
-Get-Process -Name 'WindowsNotch' -ErrorAction SilentlyContinue | Stop-Process -Force
+Get-Process -Name 'FreeNotch', 'WindowsNotch' -ErrorAction SilentlyContinue | Stop-Process -Force
 Start-Sleep -Milliseconds 600
 
 if (Test-Path -LiteralPath $RunKey) {
@@ -34,4 +34,4 @@ if ($PurgeData) {
     }
 }
 
-Write-Host 'Windows Notch wurde entfernt. Lokale Einstellungen in %AppData%\WindowsNotch blieben erhalten (mit -PurgeData loeschbar).'
+Write-Host 'FreeNotch wurde entfernt. Lokale Einstellungen in %AppData%\WindowsNotch blieben erhalten (mit -PurgeData loeschbar).'
