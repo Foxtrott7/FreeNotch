@@ -4,18 +4,18 @@
 
 ## Local-Only by Default
 
-- No user accounts, no ads, no analytics, and no telemetry.
-- Settings (`settings.json`), local databases (`notch.db` for File Tray, Clipboard History, Tasks, and Notes), and error logs (`error.log`) are stored exclusively on your device in `%AppData%\WindowsNotch\`.
-- Local Wi-Fi phone file transfer runs solely on your local network unless you explicitly trigger an online upload.
+- **Zero Telemetry**: No user accounts, no ads, no analytics, and no crash-reporting servers.
+- **On-Device Storage**: Settings (`settings.json`), local databases (`notch.db` for File Tray, Clipboard History, Tasks, and Notes), and diagnostic error logs (`error.log`) are stored exclusively on your PC in `%AppData%\WindowsNotch\`.
+- **Local Phone Transfer**: Local Wi-Fi phone file transfer runs solely on your local network (`LAN`) unless you explicitly trigger a temporary online share.
 
-## Optional Online Features (Opt-In)
+## Optional Online Features (Strictly Opt-In)
 
-All network features are **disabled by default** and only connect when you enable or trigger them:
+All network features are **disabled by default** and only connect when you explicitly enable or trigger them in Settings or directly in the corresponding module:
 
-- **Weather**: Fetches forecasts from [Open-Meteo](https://open-meteo.com/) for the cities you choose.
-- **Synced Lyrics**: Fetches lyrics from [LRCLIB](https://lrclib.net/) for the currently playing track.
+- **Weather**: Fetches forecasts and location search results from [Open-Meteo](https://open-meteo.com/) for the cities you choose.
+- **Synced Lyrics**: Fetches time-synced lyrics from [LRCLIB](https://lrclib.net/) for the currently playing track.
 - **Website Favicons**: Downloads icons for saved URLs in Clipboard History.
-- **Finance Quotes**: Fetches stock/crypto data for tickers you add.
-- **Temporary Online Phone Transfer**: Uploads a file to a temporary third-party host (`catbox.moe` / `0x0.st`) only when you explicitly choose online sharing.
+- **Finance Quotes**: Fetches stock/crypto market data for tickers in your watchlist.
+- **Temporary Online Phone Transfer**: Uploads a selected file to a temporary third-party host (`catbox.moe` / `0x0.st`) only when you explicitly choose online sharing.
 
-Each external service is subject to its own privacy policy. You can disable all online features at any time in **Settings → Privacy**.
+Each external service is governed by its own privacy policy. You can disable all online features at any time under **Settings → Privacy**.
