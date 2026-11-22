@@ -26,10 +26,19 @@ namespace WindowsNotch.Modules.QuickActions
     /// </summary>
     public partial class QuickActionsModule : NotchModuleBase
     {
+        private enum QuickActionsSubView
+        {
+            None,
+            SongRecognition,
+            Calculator,
+            SoundMixer
+        }
+
         private readonly BluetoothAudioService _audioService = new();
         private CancellationTokenSource? _recogCts;
         private Border? _expandedHost;
         private QuickActionsJiggleController? _jiggleController;
+        private QuickActionsSubView _activeSubView = QuickActionsSubView.None;
         private bool _isListening;
         private bool _isDraggingVolume;
         private bool _showAudioDrawer;
@@ -52,6 +61,10 @@ namespace WindowsNotch.Modules.QuickActions
         {
             get
             {
+                if (_activeSubView == QuickActionsSubView.SongRecognition) return (450, 260);
+                if (_activeSubView == QuickActionsSubView.Calculator) return (316, 352);
+                if (_activeSubView == QuickActionsSubView.SoundMixer) return (450, 276);
+
                 int slotCount = GetTileSlots().Count + (_extraStoreRowActive ? 3 : 0);
                 int rows = Math.Max(1, (slotCount + 2) / 3);
                 int topBars = GetTopBarIds().Count;
@@ -78,6 +91,8 @@ namespace WindowsNotch.Modules.QuickActions
             _jiggleController?.Detach();
             _audioService.Updated -= OnAudioUpdated;
             _recogCts?.Cancel();
+            StopMixerRefreshTimer();
+            _activeSubView = QuickActionsSubView.None;
         }
 
         public override void Dispose()
@@ -92,6 +107,7 @@ namespace WindowsNotch.Modules.QuickActions
             Application.Current?.Dispatcher.BeginInvoke(() =>
             {
                 if (_expandedHost != null && _expandedHost.IsLoaded &&
+                    _activeSubView == QuickActionsSubView.None &&
                     !_isListening && !_isDraggingVolume && _jiggleController?.IsJiggleMode != true)
                 {
                     _expandedHost.Child = BuildExpandedContent();
@@ -146,6 +162,12 @@ namespace WindowsNotch.Modules.QuickActions
 
         public override bool HandleEscape()
         {
+            if (_activeSubView != QuickActionsSubView.None)
+            {
+                CloseSubView();
+                return true;
+            }
+
             if (_jiggleController?.HandleEscape() == true)
                 return true;
 
@@ -158,6 +180,85 @@ namespace WindowsNotch.Modules.QuickActions
                 return true;
             }
             return false;
+        }
+
+        private void OpenSubView(QuickActionsSubView view)
+        {
+            if (_activeSubView == view) return;
+            _jiggleController?.ExitJiggleMode();
+            _showStoreDrawer = false;
+            _showAudioDrawer = false;
+            StopMixerRefreshTimer();
+            _activeSubView = view;
+            RebuildExpandedUi();
+            RaiseStateChanged();
+        }
+
+        private void CloseSubView()
+        {
+            if (_activeSubView == QuickActionsSubView.None) return;
+            _recogCts?.Cancel();
+            _isListening = false;
+            _autoStartSongRec = true;
+            _lastSongResult = null;
+            StopMixerRefreshTimer();
+            _activeSubView = QuickActionsSubView.None;
+            RebuildExpandedUi();
+            RaiseStateChanged();
+        }
+
+        private Border BuildSubViewShell(
+            string title,
+            NotchIconKind icon,
+            FrameworkElement body,
+            FrameworkElement? headerRight = null)
+        {
+            var root = new DockPanel { Margin = new Thickness(4, 2, 4, 2) };
+
+            var header = new DockPanel { LastChildFill = false, Margin = new Thickness(2, 0, 2, 10) };
+            var left = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+            var iconEl = NotchDesign.CreateVectorIcon(icon, 15, NotchDesign.AccentPrimaryBrush, 2.0);
+            iconEl.Margin = new Thickness(0, 0, 8, 0);
+            iconEl.VerticalAlignment = VerticalAlignment.Center;
+            left.Children.Add(iconEl);
+            left.Children.Add(new TextBlock
+            {
+                Text = title,
+                Foreground = NotchDesign.TextPrimaryBrush,
+                FontFamily = NotchDesign.UiDisplayFont,
+                FontSize = 15.5,
+                FontWeight = FontWeights.Bold,
+                VerticalAlignment = VerticalAlignment.Center
+            });
+            DockPanel.SetDock(left, Dock.Left);
+            header.Children.Add(left);
+
+            var closeBtn = NotchDesign.CreateIconActionButton(
+                NotchIconKind.Close,
+                L.T("qa.subview.back"),
+                CloseSubView,
+                size: 28);
+            DockPanel.SetDock(closeBtn, Dock.Right);
+            header.Children.Add(closeBtn);
+
+            if (headerRight != null)
+            {
+                headerRight.Margin = new Thickness(0, 0, 6, 0);
+                DockPanel.SetDock(headerRight, Dock.Right);
+                header.Children.Add(headerRight);
+            }
+
+            DockPanel.SetDock(header, Dock.Top);
+            root.Children.Add(header);
+            root.Children.Add(body);
+
+            var container = new Border
+            {
+                Background = Brushes.Transparent,
+                Child = root
+            };
+            NotchDesign.AnimateSubViewEnter(container, slideY: 8, durationMs: NotchDesign.MicroTransitionMs);
+            return container;
         }
 
         private void RebuildExpandedUi()
@@ -227,6 +328,13 @@ namespace WindowsNotch.Modules.QuickActions
 
         private FrameworkElement BuildExpandedContent()
         {
+            if (_activeSubView == QuickActionsSubView.SongRecognition)
+                return BuildSongRecognitionSubView();
+            if (_activeSubView == QuickActionsSubView.Calculator)
+                return BuildCalculatorSubView();
+            if (_activeSubView == QuickActionsSubView.SoundMixer)
+                return BuildSoundMixerSubView();
+
             var overlayRoot = new Grid();
             var contentStack = new StackPanel { Margin = new Thickness(4, 2, 4, 2) };
             var dragOverlayCanvas = new Canvas { IsHitTestVisible = false, ClipToBounds = false };
@@ -451,6 +559,10 @@ namespace WindowsNotch.Modules.QuickActions
                 return CreateQuickTile(NotchIconKind.Bluetooth, L.T("qa.tile.bluetooth"), _bluetoothOn, L.T("qa.tile.bluetooth_tooltip"), () => _ = ToggleRadioAsync(RadioKind.Bluetooth, "ms-settings:bluetooth"));
             if (id == "nightlight")
                 return CreateQuickTile(NotchIconKind.Sun, L.T("qa.tile.nightlight"), _nightLightOn, L.T("qa.tile.nightlight_tooltip"), ToggleNightLight);
+            if (id == "calc")
+                return CreateQuickTile(NotchIconKind.Dashboard, L.T("qa.tile.calc"), false, L.T("qa.tile.calc_tooltip"), () => OpenSubView(QuickActionsSubView.Calculator));
+            if (id == "volmixer")
+                return CreateQuickTile(NotchIconKind.Layers, L.T("qa.tile.volmixer"), false, L.T("qa.tile.volmixer_tooltip"), () => OpenSubView(QuickActionsSubView.SoundMixer));
 
             var def = TileCatalog.FirstOrDefault(t => t.Id == id);
             if (def == null || def.Execute == null) return null;
@@ -459,128 +571,19 @@ namespace WindowsNotch.Modules.QuickActions
 
         private Button CreateSongRecognitionButton()
         {
-            var grid = new Grid { VerticalAlignment = VerticalAlignment.Center };
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-
-            var scale = new ScaleTransform(1.0, 1.0);
-            var waveIcon = NotchDesign.CreateVectorIcon(
-                NotchIconKind.Waveform,
-                14.5,
-                _isListening ? NotchDesign.AccentPrimaryBrush : NotchDesign.TextPrimaryBrush,
-                1.95);
-            waveIcon.Margin = new Thickness(0, 0, 8, 0);
-            waveIcon.VerticalAlignment = VerticalAlignment.Center;
-            waveIcon.RenderTransformOrigin = new Point(0.5, 0.5);
-            waveIcon.RenderTransform = scale;
-            Grid.SetColumn(waveIcon, 0);
-            grid.Children.Add(waveIcon);
-
-            var label = new TextBlock
-            {
-                Text = _isListening ? L.T("qa.listening") : (_recognizedLine ?? L.T("qa.song_rec")),
-                Foreground = _isListening ? NotchDesign.AccentPrimaryBrush : NotchDesign.TextPrimaryBrush,
-                FontFamily = NotchDesign.UiTextFont,
-                FontSize = 11.5,
-                FontWeight = FontWeights.SemiBold,
-                TextTrimming = TextTrimming.CharacterEllipsis,
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            Grid.SetColumn(label, 1);
-            grid.Children.Add(label);
-
+            string labelText = _isListening ? L.T("qa.listening") : (_recognizedLine ?? L.T("qa.song_rec"));
             string tooltip = !SettingsService.Current.OptInMusicRecognition
                 ? L.T("qa.song_rec_enable")
                 : !string.IsNullOrWhiteSpace(_recognizedSub)
                     ? $"{_recognizedLine} – {_recognizedSub}"
                     : L.T("qa.song_rec_tooltip");
 
-            var btn = NotchDesign.CreateRoundedButton(
-                grid,
-                () => { },
-                background: _isListening
-                    ? NotchDesign.CreateSoftAccentTileBrush(0x26)
-                    : NotchDesign.CardBackgroundBrush,
-                hoverBackground: _isListening
-                    ? NotchDesign.CreateSoftAccentTileBrush(0x38)
-                    : NotchDesign.NestedCardBackgroundBrush,
-                cornerRadius: NotchDesign.RadiusInner,
-                padding: new Thickness(10, 11, 10, 11),
-                tooltip: tooltip);
-            btn.HorizontalContentAlignment = HorizontalAlignment.Stretch;
-
-            btn.Click += async (_, _) =>
-            {
-                if (_isListening)
-                {
-                    _recogCts?.Cancel();
-                    return;
-                }
-
-                if (!SettingsService.Current.OptInMusicRecognition)
-                {
-                    ((App)Application.Current).Manager?.ShowSettings();
-                    return;
-                }
-
-                _isListening = true;
-                _recogCts?.Dispose();
-                _recogCts = new CancellationTokenSource();
-                var ct = _recogCts.Token;
-
-                label.Text = L.T("qa.listening");
-                label.Foreground = NotchDesign.AccentPrimaryBrush;
-
-                var pulse = new DoubleAnimation(0.86, 1.18, TimeSpan.FromMilliseconds(420))
-                {
-                    AutoReverse = true,
-                    RepeatBehavior = RepeatBehavior.Forever,
-                    EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut }
-                };
-                scale.BeginAnimation(ScaleTransform.ScaleXProperty, pulse);
-                scale.BeginAnimation(ScaleTransform.ScaleYProperty, pulse);
-
-                try
-                {
-                    var result = await SongRecognitionService.RecognizeAsync(null, ct);
-                    if (result.Success)
-                    {
-                        _recognizedLine = result.Title;
-                        _recognizedSub = string.IsNullOrWhiteSpace(result.Artist)
-                            ? result.StatusMessage
-                            : result.Artist;
-                    }
-                    else
-                    {
-                        _recognizedLine = L.T("qa.song_rec");
-                        _recognizedSub = result.StatusMessage;
-                    }
-                    label.Text = _recognizedLine;
-                    btn.ToolTip = !string.IsNullOrWhiteSpace(_recognizedSub)
-                        ? $"{_recognizedLine} – {_recognizedSub}"
-                        : L.T("qa.song_rec_tooltip");
-                }
-                catch (OperationCanceledException)
-                {
-                    label.Text = L.T("qa.song_rec");
-                }
-                catch (Exception ex)
-                {
-                    App.LogError(ex);
-                    label.Text = L.T("qa.song_failed");
-                }
-                finally
-                {
-                    _isListening = false;
-                    label.Foreground = NotchDesign.TextPrimaryBrush;
-                    scale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
-                    scale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
-                    scale.ScaleX = 1.0;
-                    scale.ScaleY = 1.0;
-                }
-            };
-
-            return btn;
+            return CreateQuickTile(
+                NotchIconKind.Waveform,
+                labelText,
+                _isListening,
+                tooltip,
+                () => OpenSubView(QuickActionsSubView.SongRecognition));
         }
 
         private Border BuildVolumeCard()
@@ -905,6 +908,7 @@ namespace WindowsNotch.Modules.QuickActions
             Application.Current?.Dispatcher.BeginInvoke(() =>
             {
                 if (_expandedHost != null && _expandedHost.IsLoaded &&
+                    _activeSubView == QuickActionsSubView.None &&
                     !_isListening && !_isDraggingVolume && _jiggleController?.IsJiggleMode != true)
                 {
                     RebuildExpandedUi();

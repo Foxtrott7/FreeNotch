@@ -14,7 +14,7 @@ namespace WindowsNotch.Modules.SongRecognition
         private const uint AudclntStreamFlagsLoopback = 0x00020000;
         private const int ClsctxAll = 23;
 
-        public static Task<(byte[] WavBytes, double PeakRms)> CaptureAsync(
+        public static Task<(short[] Mono16kSamples, double PeakRms)> CaptureAsync(
             TimeSpan duration,
             Action<double>? onLevel,
             CancellationToken ct)
@@ -22,7 +22,7 @@ namespace WindowsNotch.Modules.SongRecognition
             return Task.Run(() => CaptureInternal(duration, onLevel, ct), ct);
         }
 
-        private static (byte[] WavBytes, double PeakRms) CaptureInternal(
+        private static (short[] Mono16kSamples, double PeakRms) CaptureInternal(
             TimeSpan duration,
             Action<double>? onLevel,
             CancellationToken ct)
@@ -105,12 +105,12 @@ namespace WindowsNotch.Modules.SongRecognition
                 }
 
                 audioClient.Stop();
-                return (WrapWav(pcmStream.ToArray(), wfx), peakRms);
+                return (DownsampleTo16kMono(pcmStream.ToArray(), wfx), peakRms);
             }
             catch (Exception ex)
             {
                 App.LogError(ex);
-                return (Array.Empty<byte>(), 0.0);
+                return (Array.Empty<short>(), 0.0);
             }
             finally
             {
@@ -149,26 +149,47 @@ namespace WindowsNotch.Modules.SongRecognition
             return samples > 0 ? Math.Sqrt(sum / samples) : 0;
         }
 
-        private static byte[] WrapWav(byte[] pcm, WaveFormatEx wfx)
+        private static short[] DownsampleTo16kMono(byte[] pcm, WaveFormatEx wfx)
         {
-            if (pcm.Length == 0) return Array.Empty<byte>();
-            using var ms = new MemoryStream(44 + pcm.Length);
-            using var bw = new BinaryWriter(ms);
-            bw.Write(System.Text.Encoding.ASCII.GetBytes("RIFF"));
-            bw.Write(36 + pcm.Length);
-            bw.Write(System.Text.Encoding.ASCII.GetBytes("WAVE"));
-            bw.Write(System.Text.Encoding.ASCII.GetBytes("fmt "));
-            bw.Write(16);
-            bw.Write((ushort)(wfx.BitsPerSample == 32 ? 3 : 1));
-            bw.Write(wfx.Channels);
-            bw.Write(wfx.SamplesPerSec);
-            bw.Write(wfx.AvgBytesPerSec);
-            bw.Write(wfx.BlockAlign);
-            bw.Write(wfx.BitsPerSample);
-            bw.Write(System.Text.Encoding.ASCII.GetBytes("data"));
-            bw.Write(pcm.Length);
-            bw.Write(pcm);
-            return ms.ToArray();
+            if (pcm.Length == 0 || wfx.BlockAlign == 0 || wfx.Channels == 0 || wfx.SamplesPerSec == 0)
+                return Array.Empty<short>();
+
+            int totalFrames = pcm.Length / wfx.BlockAlign;
+            if (totalFrames <= 0) return Array.Empty<short>();
+
+            const double targetRate = 16000.0;
+            double step = wfx.SamplesPerSec / targetRate;
+            int outLen = (int)(totalFrames / step);
+            if (outLen <= 0) return Array.Empty<short>();
+
+            var output = new short[outLen];
+            int bytesPerSample = wfx.BitsPerSample / 8;
+            bool isFloat32 = wfx.BitsPerSample == 32 && (wfx.FormatTag == 3 || wfx.FormatTag == 0xFFFE);
+            bool isInt16 = wfx.BitsPerSample == 16;
+            if (!isFloat32 && !isInt16) return Array.Empty<short>();
+
+            for (int i = 0; i < outLen; i++)
+            {
+                int frameIdx = Math.Min(totalFrames - 1, (int)(i * step));
+                int frameOffset = frameIdx * wfx.BlockAlign;
+                double sum = 0;
+
+                for (int ch = 0; ch < wfx.Channels; ch++)
+                {
+                    int sampleOffset = frameOffset + ch * bytesPerSample;
+                    if (sampleOffset + bytesPerSample > pcm.Length) break;
+
+                    if (isFloat32)
+                        sum += BitConverter.ToSingle(pcm, sampleOffset);
+                    else
+                        sum += BitConverter.ToInt16(pcm, sampleOffset) / 32768.0;
+                }
+
+                double mono = sum / wfx.Channels;
+                output[i] = (short)Math.Clamp(mono * 32767.0, -32768.0, 32767.0);
+            }
+
+            return output;
         }
 
         [StructLayout(LayoutKind.Sequential)]
