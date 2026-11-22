@@ -39,6 +39,7 @@ namespace WindowsNotch.Modules.QuickActions
         private Border? _expandedHost;
         private QuickActionsJiggleController? _jiggleController;
         private QuickActionsSubView _activeSubView = QuickActionsSubView.None;
+        private bool _isSubViewPinned;
         private bool _isListening;
         private bool _isDraggingVolume;
         private bool _showAudioDrawer;
@@ -49,21 +50,20 @@ namespace WindowsNotch.Modules.QuickActions
         private bool _bluetoothOn;
         private bool _wifiOn;
         private bool _nightLightOn;
-        private string? _recognizedLine;
-        private string? _recognizedSub;
 
         public override string Id => "quickactions";
         public override string Title => "Control Center";
         public override NotchIconKind IconKind => NotchIconKind.Bolt;
         public override int Priority => 5;
+        public override bool KeepExpanded => _activeSubView != QuickActionsSubView.None && _isSubViewPinned;
         public override double? PreferredPreviewWidth => 200;
         public override (double Width, double Height)? PreferredExpandedSize
         {
             get
             {
-                if (_activeSubView == QuickActionsSubView.SongRecognition) return (450, 260);
+                if (_activeSubView == QuickActionsSubView.SongRecognition) return (450, 290);
                 if (_activeSubView == QuickActionsSubView.Calculator) return (316, 352);
-                if (_activeSubView == QuickActionsSubView.SoundMixer) return (450, 276);
+                if (_activeSubView == QuickActionsSubView.SoundMixer) return (460, 344);
 
                 int slotCount = GetTileSlots().Count + (_extraStoreRowActive ? 3 : 0);
                 int rows = Math.Max(1, (slotCount + 2) / 3);
@@ -92,7 +92,20 @@ namespace WindowsNotch.Modules.QuickActions
             _audioService.Updated -= OnAudioUpdated;
             _recogCts?.Cancel();
             StopMixerRefreshTimer();
+            _isSubViewPinned = false;
             _activeSubView = QuickActionsSubView.None;
+        }
+
+        public void OnCollapsed()
+        {
+            if (_activeSubView != QuickActionsSubView.None && !_isSubViewPinned)
+                CloseSubView();
+        }
+
+        public void OnTabDeselected()
+        {
+            if (_activeSubView != QuickActionsSubView.None && !_isSubViewPinned)
+                CloseSubView();
         }
 
         public override void Dispose()
@@ -189,7 +202,15 @@ namespace WindowsNotch.Modules.QuickActions
             _showStoreDrawer = false;
             _showAudioDrawer = false;
             StopMixerRefreshTimer();
+            _isSubViewPinned = false;
             _activeSubView = view;
+
+            if (view == QuickActionsSubView.SongRecognition && SettingsService.Current.OptInMusicRecognition)
+            {
+                _lastSongResult = null;
+                _ = StartSongRecognitionInSubViewAsync(skipInitialRebuild: true);
+            }
+
             RebuildExpandedUi();
             RaiseStateChanged();
         }
@@ -199,7 +220,7 @@ namespace WindowsNotch.Modules.QuickActions
             if (_activeSubView == QuickActionsSubView.None) return;
             _recogCts?.Cancel();
             _isListening = false;
-            _autoStartSongRec = true;
+            _isSubViewPinned = false;
             _lastSongResult = null;
             StopMixerRefreshTimer();
             _activeSubView = QuickActionsSubView.None;
@@ -233,13 +254,25 @@ namespace WindowsNotch.Modules.QuickActions
             DockPanel.SetDock(left, Dock.Left);
             header.Children.Add(left);
 
-            var closeBtn = NotchDesign.CreateIconActionButton(
-                NotchIconKind.Close,
-                L.T("qa.subview.back"),
-                CloseSubView,
-                size: 28);
-            DockPanel.SetDock(closeBtn, Dock.Right);
-            header.Children.Add(closeBtn);
+            var pinBtn = NotchDesign.CreateRoundedButton(
+                NotchDesign.CreateVectorIcon(
+                    NotchIconKind.Pin,
+                    14,
+                    _isSubViewPinned ? Brushes.White : NotchDesign.TextPrimaryBrush,
+                    _isSubViewPinned ? 2.1 : 1.85),
+                () => { },
+                background: _isSubViewPinned ? NotchDesign.AccentPrimaryBrush : NotchDesign.CardBackgroundBrush,
+                hoverBackground: _isSubViewPinned ? NotchDesign.AccentHoverBrush : NotchDesign.NestedCardBackgroundBrush,
+                cornerRadius: 14,
+                padding: new Thickness(0),
+                tooltip: _isSubViewPinned ? L.T("qa.subview.unpin") : L.T("qa.subview.pin"));
+            pinBtn.Width = 28;
+            pinBtn.Height = 28;
+            pinBtn.VerticalAlignment = VerticalAlignment.Center;
+            pinBtn.Opacity = _isSubViewPinned ? 1.0 : 0.0;
+            pinBtn.IsHitTestVisible = _isSubViewPinned;
+            DockPanel.SetDock(pinBtn, Dock.Right);
+            header.Children.Add(pinBtn);
 
             if (headerRight != null)
             {
@@ -257,6 +290,45 @@ namespace WindowsNotch.Modules.QuickActions
                 Background = Brushes.Transparent,
                 Child = root
             };
+
+            void UpdatePinVisibility(bool hovered)
+            {
+                bool show = _isSubViewPinned || hovered;
+                pinBtn.IsHitTestVisible = show;
+                double target = show ? 1.0 : 0.0;
+                if (!NotchDesign.EffectiveAnimationsEnabled)
+                {
+                    pinBtn.BeginAnimation(UIElement.OpacityProperty, null);
+                    pinBtn.Opacity = target;
+                    return;
+                }
+                pinBtn.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(
+                    target,
+                    TimeSpan.FromMilliseconds(160))
+                {
+                    EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+                });
+            }
+
+            container.MouseEnter += (_, _) => UpdatePinVisibility(true);
+            container.MouseLeave += (_, _) => UpdatePinVisibility(false);
+
+            pinBtn.Click += (_, _) =>
+            {
+                if (_isSubViewPinned)
+                {
+                    CloseSubView();
+                    return;
+                }
+
+                _isSubViewPinned = true;
+                pinBtn.Background = NotchDesign.AccentPrimaryBrush;
+                pinBtn.ToolTip = L.T("qa.subview.unpin");
+                pinBtn.Content = NotchDesign.CreateVectorIcon(NotchIconKind.Pin, 14, Brushes.White, 2.1);
+                UpdatePinVisibility(true);
+                RaiseStateChanged();
+            };
+
             NotchDesign.AnimateSubViewEnter(container, slideY: 8, durationMs: NotchDesign.MicroTransitionMs);
             return container;
         }
@@ -571,16 +643,13 @@ namespace WindowsNotch.Modules.QuickActions
 
         private Button CreateSongRecognitionButton()
         {
-            string labelText = _isListening ? L.T("qa.listening") : (_recognizedLine ?? L.T("qa.song_rec"));
             string tooltip = !SettingsService.Current.OptInMusicRecognition
                 ? L.T("qa.song_rec_enable")
-                : !string.IsNullOrWhiteSpace(_recognizedSub)
-                    ? $"{_recognizedLine} – {_recognizedSub}"
-                    : L.T("qa.song_rec_tooltip");
+                : L.T("qa.song_rec_tooltip");
 
             return CreateQuickTile(
                 NotchIconKind.Waveform,
-                labelText,
+                L.T("qa.song_rec"),
                 _isListening,
                 tooltip,
                 () => OpenSubView(QuickActionsSubView.SongRecognition));

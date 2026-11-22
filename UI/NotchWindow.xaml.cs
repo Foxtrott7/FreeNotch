@@ -434,6 +434,7 @@ namespace WindowsNotch.UI
                 StopTourInternal();
                 UpdateSettingsButtonState();
                 UpdatePowerButtonState();
+                _selectedModule?.OnCollapsed();
             }
 
             bool hasLive = false;
@@ -825,6 +826,8 @@ namespace WindowsNotch.UI
             _isPowerMenuOpen = false;
             UpdateSettingsButtonState();
             UpdatePowerButtonState();
+            if (!ReferenceEquals(_selectedModule, module))
+                _selectedModule?.OnTabDeselected();
             _selectedModule = module;
             if (!string.Equals(module.Id, "filetray", StringComparison.Ordinal))
                 _fileTrayAutoCloseTimer.Stop();

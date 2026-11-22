@@ -501,6 +501,8 @@
   "qa.tile.recycle": "Recycle Bin",
   "qa.tile.recycle_tooltip": "Open Recycle Bin",
   "qa.subview.back": "Back to Control Center",
+  "qa.subview.pin": "Pin view (stays open on focus loss & tab switch)",
+  "qa.subview.unpin": "Unpin (back to Control Center)",
 
   "songrec.enable_hint": "Enable Music ID in Settings → Privacy.",
   "songrec.canceled": "Canceled.",

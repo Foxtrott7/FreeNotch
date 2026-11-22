@@ -1,7 +1,12 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Windows;
+using System.Windows.Interop;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace WindowsNotch.Modules.QuickActions
 {
@@ -9,6 +14,7 @@ namespace WindowsNotch.Modules.QuickActions
     {
         public uint ProcessId { get; init; }
         public string Name { get; init; } = string.Empty;
+        public ImageSource? Icon { get; init; }
         public float Volume { get; set; }
         public bool IsMuted { get; set; }
         public bool IsActive { get; init; }
@@ -22,6 +28,7 @@ namespace WindowsNotch.Modules.QuickActions
     internal static class AudioSessionMixerService
     {
         private const int ClsctxAll = 23;
+        private static readonly ConcurrentDictionary<string, ImageSource?> IconCache = new(StringComparer.OrdinalIgnoreCase);
 
         public static List<AudioAppSession> GetSessions()
         {
@@ -77,6 +84,7 @@ namespace WindowsNotch.Modules.QuickActions
                         {
                             ProcessId = pid,
                             Name = name,
+                            Icon = ResolveProcessIcon(pid, isSystem),
                             Volume = Math.Clamp(level, 0f, 1f),
                             IsMuted = muted,
                             IsActive = state == 1,
@@ -204,6 +212,41 @@ namespace WindowsNotch.Modules.QuickActions
             }
 
             return string.Empty;
+        }
+
+        private static ImageSource? ResolveProcessIcon(uint pid, bool isSystem)
+        {
+            if (isSystem || pid == 0) return null;
+
+            try
+            {
+                using var proc = Process.GetProcessById((int)pid);
+                string? exePath = proc.MainModule?.FileName;
+                if (string.IsNullOrWhiteSpace(exePath)) return null;
+
+                return IconCache.GetOrAdd(exePath, path =>
+                {
+                    try
+                    {
+                        using var ico = System.Drawing.Icon.ExtractAssociatedIcon(path);
+                        if (ico == null) return null;
+                        var src = Imaging.CreateBitmapSourceFromHIcon(
+                            ico.Handle,
+                            Int32Rect.Empty,
+                            BitmapSizeOptions.FromWidthAndHeight(24, 24));
+                        src.Freeze();
+                        return src;
+                    }
+                    catch
+                    {
+                        return null;
+                    }
+                });
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         [ComImport, Guid("BCDE0395-E52F-467C-8E3D-C4579291692E")]

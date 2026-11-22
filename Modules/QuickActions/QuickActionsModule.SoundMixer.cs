@@ -26,6 +26,16 @@ namespace WindowsNotch.Modules.QuickActions
             DockPanel.SetDock(masterCard, Dock.Top);
             root.Children.Add(masterCard);
 
+            // Dezenter Trennstrich zwischen Master-Lautstärke und App-Sessions (wie im Control-Center-Shop)
+            var divider = new Border
+            {
+                Height = 1,
+                Background = new SolidColorBrush(Color.FromArgb(0x18, 0xFF, 0xFF, 0xFF)),
+                Margin = new Thickness(2, 0, 2, 8)
+            };
+            DockPanel.SetDock(divider, Dock.Top);
+            root.Children.Add(divider);
+
             _mixerListStack = new StackPanel();
             PopulateMixerSessions(_mixerListStack);
 
@@ -91,7 +101,7 @@ namespace WindowsNotch.Modules.QuickActions
                     FontFamily = NotchDesign.UiTextFont,
                     FontSize = 12,
                     HorizontalAlignment = HorizontalAlignment.Center,
-                    Margin = new Thickness(0, 32, 0, 0)
+                    Margin = new Thickness(0, 36, 0, 0)
                 });
                 return;
             }
@@ -102,18 +112,52 @@ namespace WindowsNotch.Modules.QuickActions
 
         private Border BuildMixerSessionRow(AudioAppSession session)
         {
-            var card = NotchDesign.CreateCard(NotchDesign.RadiusControl, new Thickness(10, 7, 10, 7));
+            var card = NotchDesign.CreateCard(NotchDesign.RadiusControl, new Thickness(10, 6, 10, 6));
             card.Background = NotchDesign.CardBackgroundBrush;
-            card.Margin = new Thickness(0, 0, 0, 6);
+            card.Margin = new Thickness(0, 0, 0, 5);
 
+            // Reihenfolge: [App-Icon] [App-Name] [Mute-Button direkt vor Slider] [Lautstärke-Slider] [Prozent]
             var row = new Grid();
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(18) });
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(116) });
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(10) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(112) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(6) });
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(36) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(38) });
+
+            FrameworkElement appIconEl = session.Icon != null
+                ? new Image
+                {
+                    Source = session.Icon,
+                    Width = 16,
+                    Height = 16,
+                    Stretch = Stretch.Uniform,
+                    VerticalAlignment = VerticalAlignment.Center
+                }
+                : NotchDesign.CreateVectorIcon(
+                    NotchIconKind.Music,
+                    13.5,
+                    session.IsActive ? NotchDesign.AccentPrimaryBrush : NotchDesign.TextMutedBrush,
+                    1.9);
+            appIconEl.VerticalAlignment = VerticalAlignment.Center;
+            Grid.SetColumn(appIconEl, 0);
+            row.Children.Add(appIconEl);
+
+            var nameBlock = new TextBlock
+            {
+                Text = session.Name,
+                Foreground = session.IsActive ? NotchDesign.TextPrimaryBrush : NotchDesign.TextSecondaryBrush,
+                FontFamily = NotchDesign.UiTextFont,
+                FontSize = 12,
+                FontWeight = session.IsActive ? FontWeights.SemiBold : FontWeights.Normal,
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            Grid.SetColumn(nameBlock, 2);
+            row.Children.Add(nameBlock);
 
             bool muted = session.IsMuted;
             float currentVol = session.Volume;
@@ -136,6 +180,23 @@ namespace WindowsNotch.Modules.QuickActions
             };
             pctText.Typography.NumeralAlignment = FontNumeralAlignment.Tabular;
 
+            var muteBtn = NotchDesign.CreateRoundedButton(
+                muteIcon,
+                () =>
+                {
+                    muted = !muted;
+                    AudioSessionMixerService.SetSessionMute(session.ProcessId, session.IsSystemSounds, muted);
+                    if (_mixerListStack != null)
+                        PopulateMixerSessions(_mixerListStack);
+                },
+                background: Brushes.Transparent,
+                hoverBackground: NotchDesign.TabActiveBackgroundBrush,
+                cornerRadius: 8,
+                padding: new Thickness(4),
+                tooltip: L.T("qa.mute_toggle"));
+            Grid.SetColumn(muteBtn, 4);
+            row.Children.Add(muteBtn);
+
             var slider = BuildAppVolumeSlider(
                 muted ? 0.0 : currentVol,
                 ratio =>
@@ -150,41 +211,10 @@ namespace WindowsNotch.Modules.QuickActions
                     pctText.Text = muted ? L.T("mixer.muted_short") : $"{Math.Round(currentVol * 100)}%";
                     pctText.Foreground = muted ? NotchDesign.TextMutedBrush : NotchDesign.TextSecondaryBrush;
                 });
-
-            var muteBtn = NotchDesign.CreateRoundedButton(
-                muteIcon,
-                () =>
-                {
-                    muted = !muted;
-                    AudioSessionMixerService.SetSessionMute(session.ProcessId, session.IsSystemSounds, muted);
-                    if (_mixerListStack != null)
-                        PopulateMixerSessions(_mixerListStack);
-                },
-                background: Brushes.Transparent,
-                hoverBackground: NotchDesign.TabActiveBackgroundBrush,
-                cornerRadius: 8,
-                padding: new Thickness(5),
-                tooltip: L.T("qa.mute_toggle"));
-            Grid.SetColumn(muteBtn, 0);
-            row.Children.Add(muteBtn);
-
-            var nameBlock = new TextBlock
-            {
-                Text = session.Name,
-                Foreground = session.IsActive ? NotchDesign.TextPrimaryBrush : NotchDesign.TextSecondaryBrush,
-                FontFamily = NotchDesign.UiTextFont,
-                FontSize = 12,
-                FontWeight = session.IsActive ? FontWeights.SemiBold : FontWeights.Normal,
-                TextTrimming = TextTrimming.CharacterEllipsis,
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            Grid.SetColumn(nameBlock, 2);
-            row.Children.Add(nameBlock);
-
-            Grid.SetColumn(slider, 4);
+            Grid.SetColumn(slider, 6);
             row.Children.Add(slider);
 
-            Grid.SetColumn(pctText, 6);
+            Grid.SetColumn(pctText, 8);
             row.Children.Add(pctText);
 
             card.Child = row;

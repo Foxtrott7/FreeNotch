@@ -62,6 +62,12 @@ namespace WindowsNotch.Core
         /// <summary>Verarbeitet optional Escape in der geöffneten Ansicht (true = abgefangen, Notch bleibt offen).</summary>
         bool HandleEscape() => false;
 
+        /// <summary>Wird aufgerufen, wenn die Notch eingeklappt wird (z. B. zum Zurücksetzen ungepinnter SubViews).</summary>
+        void OnCollapsed() { }
+
+        /// <summary>Wird aufgerufen, wenn ein anderer Top-Tab ausgewählt wird.</summary>
+        void OnTabDeselected() { }
+
         /// <summary>Startet Hintergrunddienste, Listener oder Timer des Moduls.</summary>
         void Start();
 
