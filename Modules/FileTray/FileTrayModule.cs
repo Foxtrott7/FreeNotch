@@ -186,9 +186,10 @@ namespace WindowsNotch.Modules.FileTray
                     OpenFilePicker();
             };
 
+            var redBrush = NotchDesign.GetFrozenBrush(NotchDesign.AccentRed);
             _dropContainer.ContextMenu = NotchDesign.CreateContextMenu(
                 NotchDesign.CreateContextMenuItem(L.T("filetray.menu_add"), NotchIconKind.Plus, OpenFilePicker),
-                NotchDesign.CreateContextMenuItem(L.T("filetray.menu_clear_unpinned"), NotchIconKind.Trash, ClearUnpinned));
+                NotchDesign.CreateContextMenuItem(L.T("filetray.menu_clear_unpinned"), NotchIconKind.Trash, ClearUnpinned, iconBrush: redBrush, foreground: redBrush));
 
             RebuildList();
             return _dropContainer;
@@ -343,11 +344,16 @@ namespace WindowsNotch.Modules.FileTray
         {
             bool exists = item.IsDirectory ? Directory.Exists(item.FilePath) : File.Exists(item.FilePath);
 
+            Brush idleBrush = item.IsPinned ? NotchDesign.CreateSoftAccentTileBrush(0x16) : Brushes.Transparent;
+            Brush hoverBrush = item.IsPinned
+                ? NotchDesign.CreateSoftAccentTileBrush(0x28)
+                : NotchDesign.GetFrozenBrush(Color.FromArgb(0x16, 0xFF, 0xFF, 0xFF));
+
             var card = new Border
             {
                 Tag = "FileTile",
                 Width = 98,
-                Background = Brushes.Transparent,
+                Background = idleBrush,
                 CornerRadius = new CornerRadius(10),
                 Padding = new Thickness(5, 6, 5, 6),
                 Margin = new Thickness(3, 4, 3, 6),
@@ -356,9 +362,8 @@ namespace WindowsNotch.Modules.FileTray
                 ToolTip = item.FileName
             };
 
-            var hoverBrush = new SolidColorBrush(Color.FromArgb(0x16, 0xFF, 0xFF, 0xFF));
             card.MouseEnter += (_, _) => card.Background = hoverBrush;
-            card.MouseLeave += (_, _) => card.Background = Brushes.Transparent;
+            card.MouseLeave += (_, _) => card.Background = idleBrush;
 
             var tile = new StackPanel();
 

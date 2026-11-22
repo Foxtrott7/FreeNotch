@@ -90,6 +90,16 @@ namespace WindowsNotch.UI
 
             _hoverTimer.Tick += HoverTimer_Tick;
             _fileTrayAutoCloseTimer.Tick += FileTrayAutoCloseTimer_Tick;
+            NotchBorder.AddHandler(DragDrop.DragLeaveEvent, new DragEventHandler((_, _) =>
+            {
+                if (_state == NotchState.Expanded && _selectedModule?.Id == "filetray" && !IsActive)
+                    ScheduleFileTrayAutoClose(FileTrayAutoCloseDelayMs);
+            }), handledEventsToo: true);
+            NotchBorder.AddHandler(DragDrop.DropEvent, new DragEventHandler((_, _) =>
+            {
+                if (_state == NotchState.Expanded && _selectedModule?.Id == "filetray" && !IsActive)
+                    ScheduleFileTrayAutoClose(FileTrayAutoCloseDelayMs);
+            }), handledEventsToo: true);
             _privacyTimer.Tick += (_, _) => UpdatePrivacyIndicator();
             _privacyTimer.Start();
             _layoutTimer.Tick += LayoutTimer_Tick;
@@ -865,13 +875,13 @@ namespace WindowsNotch.UI
                 {
                     if (!ReferenceEquals(_selectedModule, module)) return;
                     var contentEase = NotchDesign.CreateSpringEase(0.42);
-                    var contentDur = TimeSpan.FromMilliseconds(NotchDesign.ScaleDuration(340));
+                    var contentDur = TimeSpan.FromMilliseconds(NotchDesign.TabSwitchDurationMs);
                     scale.BeginAnimation(ScaleTransform.ScaleXProperty, CreateAnim(1.0, contentDur, contentEase));
                     scale.BeginAnimation(ScaleTransform.ScaleYProperty, CreateAnim(1.0, contentDur, contentEase));
                     translate.BeginAnimation(TranslateTransform.XProperty, CreateAnim(0.0, contentDur, contentEase));
                     translate.BeginAnimation(TranslateTransform.YProperty, CreateAnim(0.0, contentDur, contentEase));
                     ExpandedHost.BeginAnimation(OpacityProperty,
-                        CreateAnim(1.0, TimeSpan.FromMilliseconds(NotchDesign.MicroTransitionMs), NotchDesign.CreateEaseOut()));
+                        CreateAnim(1.0, contentDur, NotchDesign.CreateEaseInOut()));
                 });
             }
         }
@@ -999,11 +1009,11 @@ namespace WindowsNotch.UI
             {
                 SetState(NotchState.Collapsed);
             }
-            else if (_state == NotchState.Expanded && S.Mode == InteractionMode.HoverOnly && !_isSettingsOpen && _selectedModule?.KeepExpanded != true)
+            else if (_state == NotchState.Expanded && !_isSettingsOpen && !_isOnboardingOpen && !_isTourActive && _selectedModule?.KeepExpanded != true)
             {
-                if (_selectedModule?.Id == "filetray")
-                    ScheduleFileTrayAutoClose(4000);
-                else
+                if (_selectedModule?.Id == "filetray" && (S.Mode == InteractionMode.HoverOnly || !IsActive))
+                    ScheduleFileTrayAutoClose(FileTrayAutoCloseDelayMs);
+                else if (S.Mode == InteractionMode.HoverOnly)
                     SetState(NotchState.Collapsed);
             }
         }
@@ -1405,16 +1415,18 @@ namespace WindowsNotch.UI
             }
         }
 
+        private const int FileTrayAutoCloseDelayMs = 3500;
+
         // Klick außerhalb: Das Fenster verliert den Fokus
         private void Window_Deactivated(object? sender, EventArgs e)
         {
-            if (_state != NotchState.Expanded || !S.CloseOnFocusLoss || _isSettingsOpen || _isOnboardingOpen || _isTourActive || _selectedModule?.KeepExpanded == true)
+            if (_state != NotchState.Expanded || !S.CloseOnFocusLoss || _isSettingsOpen || _isOnboardingOpen || _isTourActive || _powerPopup?.IsOpen == true || _selectedModule?.KeepExpanded == true)
                 return;
 
-            // Beim File Tray kurze Gnadenfrist (4 s), damit man Explorer/Desktop öffnen & Dateien reinziehen kann
+            // Beim File Tray kurze Gnadenfrist (3.5 s), damit man Explorer/Desktop öffnen & Dateien reinziehen kann
             if (_selectedModule?.Id == "filetray")
             {
-                ScheduleFileTrayAutoClose(4000);
+                ScheduleFileTrayAutoClose(FileTrayAutoCloseDelayMs);
                 return;
             }
 
@@ -1432,12 +1444,14 @@ namespace WindowsNotch.UI
         {
             _fileTrayAutoCloseTimer.Stop();
             if (_state != NotchState.Expanded || _selectedModule?.Id != "filetray") return;
-            if (IsActive) return;
+            if (_isSettingsOpen || _isOnboardingOpen || _isTourActive || _powerPopup?.IsOpen == true) return;
+            if (IsActive && S.Mode != InteractionMode.HoverOnly) return;
+            if (NotchBorder.IsMouseOver) return;
 
             // Während noch eine Datei mit gedrückter Maustaste gezogen wird, nicht mitten im Drag schließen
             if ((NativeMethods.GetAsyncKeyState(0x01) & 0x8000) != 0)
             {
-                ScheduleFileTrayAutoClose(2000);
+                ScheduleFileTrayAutoClose(1500);
                 return;
             }
 

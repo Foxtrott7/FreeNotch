@@ -299,8 +299,24 @@
                             <StackPanel x:Name="TabContainer" Orientation="Horizontal" VerticalAlignment="Center" />
                         </ScrollViewer>
 
-                        <!-- Einstellungen & kontextuelles Schließen (bei KeepExpanded-Modulen wie File Tray) rechts außen -->
+                        <!-- Energie, Einstellungen & kontextuelles Schließen (bei KeepExpanded-Modulen wie File Tray) rechts außen -->
                         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,0,0">
+                            <Button x:Name="PowerBtn"
+                                    Style="{StaticResource NotchIconButton}"
+                                    ToolTip="{ui:Loc notch.power_tooltip}"
+                                    Margin="0,0,4,0"
+                                    Click="Power_Click">
+                                <Viewbox Width="15" Height="15" Stretch="Uniform">
+                                    <Grid Width="24" Height="24">
+                                        <Path Data="M 12,3 L 12,12 M 18.36,6.64 A 9,9 0 1 1 5.64,6.64"
+                                              Stroke="{DynamicResource TabForeground}"
+                                              StrokeThickness="1.85"
+                                              StrokeLineJoin="Round"
+                                              StrokeStartLineCap="Round"
+                                              StrokeEndLineCap="Round" />
+                                    </Grid>
+                                </Viewbox>
+                            </Button>
                             <Button x:Name="SettingsBtn"
                                     Style="{StaticResource NotchIconButton}"
                                     ToolTip="{ui:Loc notch.settings_tooltip}"

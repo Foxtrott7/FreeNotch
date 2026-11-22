@@ -85,7 +85,8 @@ namespace WindowsNotch.Core
         Microphone,
         Pet,
         TrendingUp,
-        Star
+        Star,
+        Power
     }
 
     /// <summary>
@@ -785,6 +786,7 @@ namespace WindowsNotch.Core
             NotchIconKind.Microphone => ("M 12,2 A 3,3 0 0 1 15,5 L 15,11 A 3,3 0 0 1 9,11 L 9,5 A 3,3 0 0 1 12,2 Z M 19,10 L 19,11 A 7,7 0 0 1 5,11 L 5,10 M 12,18 L 12,22 M 8,22 L 16,22", false),
             NotchIconKind.TrendingUp => ("M 3,17 L 9,11 L 13,15 L 21,7 M 15,7 L 21,7 L 21,13", false),
             NotchIconKind.Star => ("M 12,2.5 L 14.9,8.4 L 21.4,9.3 L 16.7,13.9 L 17.8,20.4 L 12,17.3 L 6.2,20.4 L 7.3,13.9 L 2.6,9.3 L 9.1,8.4 Z", false),
+            NotchIconKind.Power => ("M 12,3 L 12,12 M 18.36,6.64 A 9,9 0 1 1 5.64,6.64", false),
             _ => ("M 12,21 A 9,9 0 1 1 12,3 A 9,9 0 1 1 12,21 Z", false)
         };
 
