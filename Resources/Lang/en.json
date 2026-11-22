@@ -406,8 +406,6 @@
   "downloads.eta_min": "~{0}m {1:00}s left",
   "downloads.eta_hr": "~{0}h {1:00}m left",
 
-  "notifications.perm_confirm": "Confirm permission (Yes / Allow)",
-  "notifications.perm_deny": "Deny / Dismiss",
   "notifications.unavailable": "Notifications unavailable",
   "notifications.allow_access": "Notifications: Allow access",
   "notifications.none_new": "No new notifications",

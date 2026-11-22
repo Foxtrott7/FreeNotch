@@ -15,8 +15,6 @@ namespace WindowsNotch.Modules.Notifications
         public string Body { get; init; } = string.Empty;
         public DateTimeOffset Timestamp { get; init; } = DateTimeOffset.Now;
         public ImageSource? AppIcon { get; init; }
-        public bool IsAgentPermissionRequest { get; init; }
-        public string AgentKey { get; init; } = string.Empty;
 
         /// <summary>Liefert den passenden Filter-Schlüssel (bevorzugt AppName, sonst AppId).</summary>
         public string FilterKey => !string.IsNullOrWhiteSpace(AppName) ? AppName : AppId;

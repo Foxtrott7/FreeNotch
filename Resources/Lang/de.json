@@ -406,8 +406,6 @@
   "downloads.eta_min": "noch ~{0}m {1:00}s",
   "downloads.eta_hr": "noch ~{0}h {1:00}m",
 
-  "notifications.perm_confirm": "Berechtigung bestätigen (Ja / Okay)",
-  "notifications.perm_deny": "Ablehnen / Verwerfen",
   "notifications.unavailable": "Mitteilungen nicht verfügbar",
   "notifications.allow_access": "Mitteilungen: Zugriff erlauben",
   "notifications.none_new": "Keine neuen Mitteilungen",

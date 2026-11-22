@@ -52,39 +52,17 @@ namespace WindowsNotch.Modules.Notifications
             Grid.SetColumn(textBlock, 1);
             grid.Children.Add(textBlock);
 
-            var bannerItem = _bannerItem;
-            if (bannerItem.IsAgentPermissionRequest)
+            var dot = new Border
             {
-                var actions = new StackPanel
-                {
-                    Orientation = Orientation.Horizontal,
-                    Margin = new Thickness(6, 0, 0, 0),
-                    VerticalAlignment = VerticalAlignment.Center
-                };
-                actions.Children.Add(CreateLiveDecisionButton(NotchIconKind.Check, NotchDesign.AccentGreen,
-                    L.T("notifications.perm_confirm"), () => HandleAgentPermissionDecision(bannerItem, true)));
-                var denyBtn = CreateLiveDecisionButton(NotchIconKind.Close, NotchDesign.AccentRed,
-                    L.T("notifications.perm_deny"), () => HandleAgentPermissionDecision(bannerItem, false));
-                denyBtn.Margin = new Thickness(4, 0, 0, 0);
-                actions.Children.Add(denyBtn);
-
-                Grid.SetColumn(actions, 2);
-                grid.Children.Add(actions);
-            }
-            else
-            {
-                var dot = new Border
-                {
-                    Width = 7,
-                    Height = 7,
-                    CornerRadius = new CornerRadius(3.5),
-                    Background = NotchDesign.AccentPrimaryBrush,
-                    Margin = new Thickness(8, 0, 0, 0),
-                    VerticalAlignment = VerticalAlignment.Center
-                };
-                Grid.SetColumn(dot, 2);
-                grid.Children.Add(dot);
-            }
+                Width = 7,
+                Height = 7,
+                CornerRadius = new CornerRadius(3.5),
+                Background = NotchDesign.AccentPrimaryBrush,
+                Margin = new Thickness(8, 0, 0, 0),
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            Grid.SetColumn(dot, 2);
+            grid.Children.Add(dot);
 
             return grid;
         }
@@ -474,77 +452,10 @@ namespace WindowsNotch.Modules.Notifications
                 });
             }
 
-            if (entry.IsAgentPermissionRequest)
-            {
-                var permRow = new StackPanel
-                {
-                    Orientation = Orientation.Horizontal,
-                    Margin = new Thickness(0, 7, 0, 0)
-                };
-                var approveBtn = CreateDecisionChip(NotchIconKind.Check, "Ja / Okay", NotchDesign.AccentGreen,
-                    () => HandleAgentPermissionDecision(entry, true));
-                approveBtn.Margin = new Thickness(0, 0, 6, 0);
-                var denyBtn = CreateDecisionChip(NotchIconKind.Close, "Ablehnen", NotchDesign.AccentRed,
-                    () => HandleAgentPermissionDecision(entry, false));
-                permRow.Children.Add(approveBtn);
-                permRow.Children.Add(denyBtn);
-                content.Children.Add(permRow);
-            }
-
             Grid.SetColumn(content, 1);
             grid.Children.Add(content);
             card.Child = grid;
             return card;
-        }
-
-        private void HandleAgentPermissionDecision(NotificationEntry entry, bool approve)
-        {
-            _ = AgentPermissionHelper.HandleDecisionAsync(entry.AgentKey, approve);
-            RemoveHistoryItem(entry);
-        }
-
-        private static Button CreateLiveDecisionButton(NotchIconKind kind, Color bg, string tooltip, Action onClick)
-        {
-            var icon = NotchDesign.CreateVectorIcon(kind, 10, Brushes.White, 2.2);
-            var btn = NotchDesign.CreateRoundedButton(
-                icon,
-                onClick,
-                background: new SolidColorBrush(Color.FromArgb(0xDC, bg.R, bg.G, bg.B)),
-                hoverBackground: new SolidColorBrush(bg),
-                foreground: Brushes.White,
-                cornerRadius: 7,
-                padding: new Thickness(0),
-                tooltip: tooltip);
-            btn.Width = 22;
-            btn.Height = 22;
-            btn.VerticalAlignment = VerticalAlignment.Center;
-            return btn;
-        }
-
-        private static Button CreateDecisionChip(NotchIconKind kind, string label, Color accent, Action onClick)
-        {
-            var row = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
-            var icon = NotchDesign.CreateVectorIcon(kind, 10, Brushes.White, 2.2);
-            icon.Margin = new Thickness(0, 0, 5, 0);
-            row.Children.Add(icon);
-            row.Children.Add(new TextBlock
-            {
-                Text = label,
-                Foreground = Brushes.White,
-                FontFamily = NotchDesign.UiTextFont,
-                FontSize = 11,
-                FontWeight = FontWeights.SemiBold,
-                VerticalAlignment = VerticalAlignment.Center
-            });
-
-            return NotchDesign.CreateRoundedButton(
-                row,
-                onClick,
-                background: new SolidColorBrush(Color.FromArgb(0xCC, accent.R, accent.G, accent.B)),
-                hoverBackground: new SolidColorBrush(accent),
-                foreground: Brushes.White,
-                cornerRadius: 9,
-                padding: new Thickness(10, 4, 10, 4));
         }
 
         // ---------- UI-Helper ----------

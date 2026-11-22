@@ -309,8 +309,6 @@ namespace WindowsNotch.Modules.Notifications
                 string title = texts.Count > 0 ? texts[0] : appName;
                 string body = texts.Count > 1 ? string.Join(" — ", texts.Skip(1)) : string.Empty;
 
-                bool isAgentPerm = AgentPermissionHelper.IsPermissionRequest(appName, appId, title, body, out string agentKey);
-
                 return new NotificationEntry
                 {
                     Id = notification.Id,
@@ -319,9 +317,7 @@ namespace WindowsNotch.Modules.Notifications
                     Title = title,
                     Body = body,
                     Timestamp = notification.CreationTime,
-                    AppIcon = icon,
-                    IsAgentPermissionRequest = isAgentPerm,
-                    AgentKey = agentKey
+                    AppIcon = icon
                 };
             }
             catch
