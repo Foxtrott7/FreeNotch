@@ -1394,7 +1394,7 @@ namespace WindowsNotch.UI
                 ? new Thickness(18, 16, 18, 16)
                 : new Thickness(26, 2, 26, 18);
 
-            CloseBtn.Visibility = (!hideHeader && (_isSettingsOpen || _selectedModule?.KeepExpanded == true))
+            CloseBtn.Visibility = (!hideHeader && !_isSettingsOpen && !_isPowerMenuOpen && _selectedModule?.KeepExpanded == true)
                 ? Visibility.Visible
                 : Visibility.Collapsed;
         }

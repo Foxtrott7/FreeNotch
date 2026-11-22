@@ -14,6 +14,7 @@ namespace WindowsNotch.UI
     public partial class NotchWindow
     {
         private bool _isPowerMenuOpen;
+        private bool _isQuitting;
 
         [DllImport("powrprof.dll", SetLastError = true)]
         private static extern bool SetSuspendState(bool hibernate, bool forceCritical, bool disableWakeEvent);
@@ -132,7 +133,7 @@ namespace WindowsNotch.UI
                 NotchIconKind.Close,
                 NotchDesign.TextSecondaryBrush,
                 NotchDesign.TextPrimaryBrush,
-                () => Application.Current?.Shutdown()));
+                ShutdownGracefully));
 
             stack.Children.Add(CreatePowerMenuRow(
                 L.T("notch.power.sleep"),
@@ -346,6 +347,33 @@ namespace WindowsNotch.UI
                 onClick();
             };
             return pill;
+        }
+
+        private void ShutdownGracefully()
+        {
+            if (_isQuitting) return;
+            _isQuitting = true;
+
+            if (!NotchDesign.EffectiveAnimationsEnabled)
+            {
+                Application.Current?.Shutdown();
+                return;
+            }
+
+            SetState(NotchState.Collapsed);
+            var fadeDur = TimeSpan.FromMilliseconds(NotchDesign.CollapseDurationMs);
+            NotchBorder.BeginAnimation(OpacityProperty, CreateAnim(0.0, fadeDur, NotchDesign.CreateEaseInOut()));
+
+            var quitTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(NotchDesign.CollapseDurationMs + 30)
+            };
+            quitTimer.Tick += (_, _) =>
+            {
+                quitTimer.Stop();
+                Application.Current?.Shutdown();
+            };
+            quitTimer.Start();
         }
 
         private static void TriggerSystemSleep()
