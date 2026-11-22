@@ -1,11 +1,14 @@
 param(
     [string]$Version = '',
     [switch]$SkipFrameworkDependent,
-    [switch]$NoRestore
+    [switch]$NoRestore,
+    [switch]$SkipArchive,
+    [switch]$PackageOnly
 )
 
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
+Add-Type -AssemblyName System.IO.Compression.FileSystem
 
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 $CsprojPath = Join-Path $RepoRoot 'WindowsNotch.csproj'
@@ -20,10 +23,12 @@ if ([string]::IsNullOrWhiteSpace($Version)) {
 $Version = $Version.TrimStart('v')
 
 $PublishRoot = Join-Path $RepoRoot 'publish'
-if (Test-Path -LiteralPath $PublishRoot) {
-    Remove-Item -LiteralPath $PublishRoot -Recurse -Force
+if (-not $PackageOnly) {
+    if (Test-Path -LiteralPath $PublishRoot) {
+        Remove-Item -LiteralPath $PublishRoot -Recurse -Force
+    }
+    New-Item -ItemType Directory -Path $PublishRoot -Force | Out-Null
 }
-New-Item -ItemType Directory -Path $PublishRoot -Force | Out-Null
 
 $InstallerFiles = @(
     (Join-Path $PSScriptRoot 'Install-PerUser.ps1'),
@@ -31,52 +36,61 @@ $InstallerFiles = @(
     (Join-Path $PSScriptRoot 'Uninstall-PerUser.ps1')
 )
 
-function Publish-Variant {
-    param(
-        [string]$VariantName,
-        [bool]$SelfContained,
-        [string]$ZipName
-    )
-
-    $OutDir = Join-Path $PublishRoot $VariantName
-    Write-Host "=== Publishe $VariantName (SelfContained=$SelfContained, Version=$Version) ==="
-
-    $scFlag = if ($SelfContained) { 'true' } else { 'false' }
-    $publishArgs = @(
-        'publish', $CsprojPath,
-        '-c', 'Release',
-        '-r', 'win-x64',
-        '--self-contained', $scFlag,
-        "-p:Version=$Version",
-        '-p:PublishSingleFile=false',
-        '-p:DebugType=None',
-        '-p:DebugSymbols=false',
-        '-o', $OutDir
-    )
-    if ($NoRestore) {
-        $publishArgs += '--no-restore'
-    }
-    & dotnet @publishArgs | Out-Host
-
-    if ($LASTEXITCODE -ne 0) {
-        throw "dotnet publish fuer '$VariantName' fehlgeschlagen (ExitCode $LASTEXITCODE)."
-    }
-
-    foreach ($file in $InstallerFiles) {
-        Copy-Item -LiteralPath $file -Destination $OutDir -Force
-    }
-
-    $ZipPath = Join-Path $PublishRoot $ZipName
-    Compress-Archive -Path (Join-Path $OutDir '*') -DestinationPath $ZipPath -CompressionLevel Optimal -Force
-    Write-Host "Erstellt: $ZipPath"
-    return $ZipPath
+$Variants = @(
+    @{ Name = 'win-x64-portable'; SelfContained = $true; Zip = "WindowsNotch-v$Version-win-x64-portable.zip" }
+)
+if (-not $SkipFrameworkDependent) {
+    $Variants += @{ Name = 'win-x64-framework-dependent'; SelfContained = $false; Zip = "WindowsNotch-v$Version-win-x64-framework-dependent.zip" }
 }
 
-$zips = @()
-$zips += Publish-Variant -VariantName 'win-x64-portable' -SelfContained $true -ZipName "WindowsNotch-v$Version-win-x64-portable.zip"
+if (-not $PackageOnly) {
+    foreach ($v in $Variants) {
+        $OutDir = Join-Path $PublishRoot $v.Name
+        Write-Host "=== Publishe $($v.Name) (SelfContained=$($v.SelfContained), Version=$Version) ==="
 
-if (-not $SkipFrameworkDependent) {
-    $zips += Publish-Variant -VariantName 'win-x64-framework-dependent' -SelfContained $false -ZipName "WindowsNotch-v$Version-win-x64-framework-dependent.zip"
+        $scFlag = if ($v.SelfContained) { 'true' } else { 'false' }
+        $publishArgs = @(
+            'publish', $CsprojPath,
+            '-c', 'Release',
+            '-r', 'win-x64',
+            '--self-contained', $scFlag,
+            "-p:Version=$Version",
+            '-p:PublishSingleFile=false',
+            '-p:DebugType=None',
+            '-p:DebugSymbols=false',
+            '-o', $OutDir
+        )
+        if ($NoRestore) {
+            $publishArgs += '--no-restore'
+        }
+        & dotnet @publishArgs | Out-Host
+
+        if ($LASTEXITCODE -ne 0) {
+            throw "dotnet publish fuer '$($v.Name)' fehlgeschlagen (ExitCode $LASTEXITCODE)."
+        }
+
+        foreach ($file in $InstallerFiles) {
+            Copy-Item -LiteralPath $file -Destination $OutDir -Force
+        }
+    }
+}
+
+if ($SkipArchive) {
+    return
+}
+
+$zips = foreach ($v in $Variants) {
+    $OutDir = Join-Path $PublishRoot $v.Name
+    if (-not (Test-Path -LiteralPath $OutDir)) {
+        throw "Publish-Verzeichnis nicht gefunden: $OutDir"
+    }
+    $ZipPath = Join-Path $PublishRoot $v.Zip
+    if (Test-Path -LiteralPath $ZipPath) {
+        Remove-Item -LiteralPath $ZipPath -Force
+    }
+    [System.IO.Compression.ZipFile]::CreateFromDirectory($OutDir, $ZipPath, [System.IO.Compression.CompressionLevel]::Optimal, $false)
+    Write-Host "Erstellt: $ZipPath"
+    $ZipPath
 }
 
 $SumsPath = Join-Path $PublishRoot 'SHA256SUMS.txt'

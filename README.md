@@ -1,57 +1,41 @@
 # Windows Notch
 
-A native, GPU-accelerated Dynamic Island-style notch for Windows 11 built with WPF and .NET 10 — local-first, zero telemetry, no account required, and bilingual (**English** & **Deutsch**).
+A Dynamic Island-style notch for Windows 11 written in C# and WPF (.NET 10).
 
----
+## Features
 
-## Key Features
+- **Widgets & Media**: 2×2 drag-and-drop bento grid with Windows media controls, synced lyrics, weather, calendar/notes/tasks, stopwatch, focus timer, and CPU/RAM/GPU stats.
+- **Notifications & Quick Controls**: Live toast history with per-app mute filters, audio device switcher, Bluetooth battery status, and quick toggles.
+- **Tools**: 5-slot drag-and-drop file tray, searchable clipboard history, region OCR/QR capture, screen recording with audio, browser download progress, and local Wi-Fi phone file transfer.
+- **Customization**: 4 themes, 14 accent presets + custom color picker, 8 screen positions, multi-monitor DPI support, and automatic hiding over fullscreen apps/games.
+- **Languages**: English and German.
 
-- **Privacy by Design**: No accounts, no ads, no analytics or telemetry. Settings (`settings.json`), SQLite history, and logs (`error.log`) stay locally in `%AppData%\WindowsNotch\`.
-- **Explicit Online Opt-Ins**: All network features are disabled by default and only connect when you enable them (Weather via Open-Meteo, Synced Lyrics via LRCLIB, website favicons, optional finance live feeds, or temporary online phone-transfer uploads).
-- **Native & Smooth (60–240 Hz)**: Pure WPF/DirectX UI with adaptive frame rates and Windows *Animation Effects* respect.
-- **Fullscreen Protection**: Automatically hides over fullscreen games, videos, and presentations (with customizable app exclusions).
-- **Flexible Interaction & Placement**: Hover and/or click activation, multi-monitor support (`PerMonitorV2` DPI), 8 screen edges (docked or floating), 4 themes (`Dark`, `DarkGlass`, `Light`, `LightGlass`), 14 accent presets + custom color editor, and customizable idle/hover status slots.
+## Privacy
 
-## Included Modules
+Everything runs locally with no accounts, ads, or telemetry. Settings, logs, and clipboard/notification databases stay in `%AppData%\WindowsNotch\`.
 
-- **Widgets Dashboard (`2×2` Bento Grid)**: Rearrangeable drag-and-drop tiles with a built-in module drawer — Live Lyrics (with karaoke word wave & pinning), Media Player, Weather (with animated atmospheric effects), Calendar / Tasks / Notes, Finance tile, customizable Carousel, Focus Timer, Stopwatch, and Hardware Monitor (CPU / RAM / GPU).
-- **Media & Notifications**: Windows media session controls (`GSMTC`) and live notification banners with history and per-app mute filters.
-- **Productivity & Utilities**:
-  - **File Tray**: 5-slot drag-and-drop shelf for quick file staging across apps.
-  - **Clipboard History**: Searchable SQLite history for text, links, and images with pinning.
-  - **Screen Snip & OCR**: Region capture with Windows OCR, QR detection, image/text copy, and save.
-  - **Screen Capture**: Monitor recording via Windows Graphics Capture + WASAPI audio with built-in preview.
-  - **Phone Transfer**: Local Wi-Fi QR transfer (send & receive) plus optional temporary online sharing.
-  - **Downloads Monitor**: Live browser download progress, speed, and ETA directly in the notch.
-  - **Control Center & Bluetooth**: Quick toggles, master volume slider, audio output switcher, and Bluetooth battery display.
-  - **Finance & Weather Tabs**: Focused views for stocks/crypto watchlists and multi-city forecasts.
+Online features (weather, lyrics, website favicons, finance quotes, temporary phone-transfer uploads) are **off by default** and only connect if you explicitly turn them on.
 
-## Download & Installation (No Admin Rights Required)
+## Download & Install
 
-1. Download **`WindowsNotch-v*-win-x64-portable.zip`** from the [GitHub Releases](https://github.com/Foxtrott7/WindowsNotch/releases) page (includes the .NET 10 Desktop Runtime).
-   *(Alternatively, choose `framework-dependent.zip` if .NET 10 Desktop Runtime is already installed.)*
-2. Extract the archive and either:
-   - Run `WindowsNotch.exe` directly for portable use, **or**
-   - Double-click `Install.cmd` to install per-user to `%LocalAppData%\Programs\WindowsNotch` with a Start Menu shortcut.
+No admin rights required.
 
-To verify downloads, compare against the published `SHA256SUMS.txt`.
+1. Download **`WindowsNotch-v*-win-x64-portable.zip`** from [Releases](https://github.com/Foxtrott7/WindowsNotch/releases) (or `framework-dependent.zip` if you already have the .NET 10 Desktop Runtime).
+2. Extract the ZIP.
+3. Run `WindowsNotch.exe` directly, or run `Install.cmd` to install to `%LocalAppData%\Programs\WindowsNotch` with a Start Menu entry.
 
-## Building from Source
+Checksums are in `SHA256SUMS.txt`.
 
-**Requirements**: Windows 10/11 (x64) and [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0).
+## Build from Source
+
+Requires Windows 10/11 (x64) and the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0).
 
 ```powershell
-# Build & run
 dotnet build WindowsNotch.csproj -v q
-dotnet run --project WindowsNotch.csproj
-
-# Run unit tests
 dotnet test tests/WindowsNotch.Tests/WindowsNotch.Tests.csproj
-
-# Create release archives (publish/)
 .\scripts\publish-release.ps1
 ```
 
 ## License
 
-Licensed under the **GNU General Public License v3.0 (GPLv3)** — see [LICENSE](LICENSE) for details.
+[GPLv3](LICENSE)

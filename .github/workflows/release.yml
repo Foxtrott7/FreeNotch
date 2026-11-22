@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release version (e.g. 1.0.0)'
+        description: 'Release version (e.g. 1.0.1)'
         required: false
         default: ''
 
@@ -17,6 +17,9 @@ permissions:
 jobs:
   build-release:
     runs-on: windows-latest
+    env:
+      SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
+      SIGNPATH_ORGANIZATION_ID: ${{ secrets.SIGNPATH_ORGANIZATION_ID || vars.SIGNPATH_ORGANIZATION_ID }}
 
     steps:
       - name: Checkout repository
@@ -27,10 +30,8 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      - name: Restore dependencies
-        run: dotnet restore WindowsNotch.csproj -r win-x64
-
-      - name: Build release packages
+      - name: Resolve release version
+        id: meta
         shell: pwsh
         run: |
           $ver = '${{ github.event.inputs.version }}'
@@ -38,10 +39,84 @@ jobs:
             $ver = '${{ github.ref_name }}'.TrimStart('v')
           }
           if ([string]::IsNullOrWhiteSpace($ver)) {
-            ./scripts/publish-release.ps1
-          } else {
-            ./scripts/publish-release.ps1 -Version $ver
+            [xml]$proj = Get-Content -LiteralPath 'WindowsNotch.csproj' -Encoding UTF8
+            $ver = ($proj.Project.PropertyGroup | Where-Object { $_.Version } | Select-Object -First 1).Version
           }
+          $ver = $ver.TrimStart('v')
+          "version=$ver" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+      - name: Restore dependencies
+        run: dotnet restore WindowsNotch.csproj -r win-x64
+
+      - name: Publish binaries
+        shell: pwsh
+        run: ./scripts/publish-release.ps1 -Version '${{ steps.meta.outputs.version }}' -SkipArchive
+
+      - name: Stage binaries for SignPath
+        if: env.SIGNPATH_API_TOKEN != '' && env.SIGNPATH_ORGANIZATION_ID != ''
+        shell: pwsh
+        run: |
+          $stageRoot = 'publish/unsigned-signing'
+          foreach ($variant in @('win-x64-portable', 'win-x64-framework-dependent')) {
+            $srcDir = Join-Path 'publish' $variant
+            if (-not (Test-Path -LiteralPath $srcDir)) { continue }
+            $dstDir = Join-Path $stageRoot $variant
+            New-Item -ItemType Directory -Path $dstDir -Force | Out-Null
+            foreach ($file in @('WindowsNotch.exe', 'WindowsNotch.dll')) {
+              Copy-Item -LiteralPath (Join-Path $srcDir $file) -Destination $dstDir -Force
+            }
+          }
+
+      - name: Upload unsigned binaries artifact
+        id: upload-unsigned
+        if: env.SIGNPATH_API_TOKEN != '' && env.SIGNPATH_ORGANIZATION_ID != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-binaries
+          path: publish/unsigned-signing
+          retention-days: 1
+
+      - name: Sign binaries with SignPath.io
+        if: env.SIGNPATH_API_TOKEN != '' && env.SIGNPATH_ORGANIZATION_ID != ''
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ env.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG || 'windows-notch' }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG || 'release-signing' }}
+          github-artifact-id: ${{ steps.upload-unsigned.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: publish/signed-signing
+
+      - name: Apply and verify signed binaries
+        if: env.SIGNPATH_API_TOKEN != '' && env.SIGNPATH_ORGANIZATION_ID != ''
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          foreach ($variant in @('win-x64-portable', 'win-x64-framework-dependent')) {
+            $dstDir = Join-Path 'publish' $variant
+            if (-not (Test-Path -LiteralPath $dstDir)) { continue }
+            foreach ($file in @('WindowsNotch.exe', 'WindowsNotch.dll')) {
+              $signedFile = Join-Path (Join-Path 'publish/signed-signing' $variant) $file
+              if (-not (Test-Path -LiteralPath $signedFile)) {
+                throw "Expected signed file missing: $signedFile"
+              }
+              $sig = Get-AuthenticodeSignature -LiteralPath $signedFile
+              if ($sig.Status -ne 'Valid') {
+                throw "Invalid Authenticode signature for ${signedFile}: $($sig.Status) ($($sig.StatusMessage))"
+              }
+              Copy-Item -LiteralPath $signedFile -Destination (Join-Path $dstDir $file) -Force
+            }
+          }
+
+      - name: Notice if SignPath is not configured
+        if: env.SIGNPATH_API_TOKEN == '' || env.SIGNPATH_ORGANIZATION_ID == ''
+        shell: pwsh
+        run: Write-Host '::notice::SignPath secrets/vars not configured; release ZIPs will contain unsigned binaries.'
+
+      - name: Package release ZIPs and SHA256SUMS
+        shell: pwsh
+        run: ./scripts/publish-release.ps1 -Version '${{ steps.meta.outputs.version }}' -PackageOnly
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
