@@ -360,20 +360,26 @@ namespace WindowsNotch.UI
                 return;
             }
 
+            // Erst komplett in die kompakte Notch einklappen, danach ohne Ausblenden in den Bildschirmrand einziehen
             SetState(NotchState.Collapsed);
-            var fadeDur = TimeSpan.FromMilliseconds(NotchDesign.CollapseDurationMs);
-            NotchBorder.BeginAnimation(OpacityProperty, CreateAnim(0.0, fadeDur, NotchDesign.CreateEaseInOut()));
 
-            var quitTimer = new DispatcherTimer
+            var collapseTimer = new DispatcherTimer
             {
-                Interval = TimeSpan.FromMilliseconds(NotchDesign.CollapseDurationMs + 30)
+                Interval = TimeSpan.FromMilliseconds(NotchDesign.CollapseDurationMs)
             };
-            quitTimer.Tick += (_, _) =>
+            collapseTimer.Tick += (_, _) =>
             {
-                quitTimer.Stop();
-                Application.Current?.Shutdown();
+                collapseTimer.Stop();
+                var (hideX, hideY) = GetSuppressSlideOffset();
+                var slideDur = TimeSpan.FromMilliseconds(NotchDesign.ScaleDuration(220));
+                var slideEase = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseIn };
+                var animX = CreateAnim(hideX, slideDur, slideEase, activeTransition: true);
+                var animY = CreateAnim(hideY, slideDur, slideEase, activeTransition: true);
+                animY.Completed += (_, _) => Application.Current?.Shutdown();
+                NotchSuppressTransform.BeginAnimation(TranslateTransform.XProperty, animX);
+                NotchSuppressTransform.BeginAnimation(TranslateTransform.YProperty, animY);
             };
-            quitTimer.Start();
+            collapseTimer.Start();
         }
 
         private static void TriggerSystemSleep()

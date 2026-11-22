@@ -491,19 +491,21 @@ namespace WindowsNotch.UI
             NotchBorder.BeginAnimation(WidthProperty, CreateAnim(w, duration, ease, activeTransition: true));
             NotchBorder.BeginAnimation(HeightProperty, CreateAnim(h, duration, ease, activeTransition: true));
 
-            int fadeMs = opening
-                ? NotchDesign.SpringOpenDurationMs
-                : Math.Max(130, (int)Math.Round(NotchDesign.CollapseDurationMs * 0.52));
-            var fadeEase = opening
-                ? NotchDesign.CreateEaseInOut()
-                : new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseIn };
             bool showPreview = target == NotchState.Preview || (target == NotchState.Collapsed && hasLive);
+            int previewFadeMs = showPreview ? NotchDesign.MicroTransitionMs : Math.Min(160, NotchDesign.MicroTransitionMs);
+            int expandedFadeMs = opening
+                ? NotchDesign.MicroTransitionMs
+                : Math.Max(130, (int)Math.Round(NotchDesign.CollapseDurationMs * 0.52));
+            var previewEase = opening ? NotchDesign.CreateEaseOut() : NotchDesign.CreateEaseInOut();
+            var expandedEase = opening
+                ? NotchDesign.CreateEaseOut()
+                : new CubicEase { EasingMode = EasingMode.EaseIn };
             PreviewHost.IsHitTestVisible = target != NotchState.Expanded;
-            SetOpacity(PreviewHost, showPreview ? 1 : 0, 0, animate: true, activeTransition: true, durationMs: fadeMs, ease: fadeEase);
+            SetOpacity(PreviewHost, showPreview ? 1 : 0, 0, animate: true, activeTransition: true, durationMs: previewFadeMs, ease: previewEase);
             SetOpacity(ExpandedPanel, target == NotchState.Expanded ? 1 : 0,
-                target == NotchState.Expanded ? 50 : 0, animate: true, activeTransition: true,
-                durationMs: fadeMs,
-                ease: fadeEase,
+                target == NotchState.Expanded ? 15 : 0, animate: true, activeTransition: true,
+                durationMs: expandedFadeMs,
+                ease: expandedEase,
                 onCompleted: target != NotchState.Expanded ? () =>
                 {
                     if (_state != NotchState.Expanded)
