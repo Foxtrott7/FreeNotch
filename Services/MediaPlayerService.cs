@@ -57,6 +57,8 @@ namespace WindowsNotch.Services
         private BrowserTrackSnapshot? _lastLongBrowserTrack;
         private string _pendingKey = string.Empty;
         private DateTimeOffset _pendingFirstSeenUtc = DateTimeOffset.MinValue;
+        private bool? _pendingToggleTarget;
+        private DateTimeOffset _pendingToggleExpiresUtc = DateTimeOffset.MinValue;
 
         private TimeSpan _timelineStart;
 
@@ -104,7 +106,49 @@ namespace WindowsNotch.Services
             return pos;
         }
 
-        public void TogglePlayPause() => Control(s => s.TryTogglePlayPauseAsync());
+        public void TogglePlayPause()
+        {
+            var s = _activeSession;
+            if (s == null) return;
+
+            bool targetPlaying = !IsPlaying;
+            _pendingToggleTarget = targetPlaying;
+            _pendingToggleExpiresUtc = DateTimeOffset.UtcNow.AddMilliseconds(2500);
+
+            if (!targetPlaying)
+                Position = GetInterpolatedPosition();
+            TimelineUpdatedAtUtc = DateTimeOffset.UtcNow;
+            IsPlaying = targetPlaying;
+            StateChanged?.Invoke();
+
+            _ = SendToggleAsync(s, targetPlaying);
+        }
+
+        private async Task SendToggleAsync(GlobalSystemMediaTransportControlsSession session, bool targetPlaying)
+        {
+            try
+            {
+                bool ok = targetPlaying
+                    ? await session.TryPlayAsync()
+                    : await session.TryPauseAsync();
+                if (!ok)
+                    ok = await session.TryTogglePlayPauseAsync();
+
+                if (!ok)
+                {
+                    _pendingToggleTarget = null;
+                    _pendingToggleExpiresUtc = DateTimeOffset.MinValue;
+                    await RefreshAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                _pendingToggleTarget = null;
+                _pendingToggleExpiresUtc = DateTimeOffset.MinValue;
+                App.LogError(ex);
+                await RefreshAsync();
+            }
+        }
         public void SkipNext() => Control(s => s.TrySkipNextAsync());
         public void SkipPrevious() => Control(s => s.TrySkipPreviousAsync());
 
@@ -497,11 +541,14 @@ namespace WindowsNotch.Services
             string album = props?.AlbumTitle ?? string.Empty;
             string trackKey = $"{title}||{artist}";
 
-            byte[]? thumb = await ReadThumbnailAsync(props?.Thumbnail);
+            bool sameTrack = Equals(session, _activeSession)
+                && string.Equals(trackKey, _confirmedTrackKey, StringComparison.OrdinalIgnoreCase);
+            ImageSource? existingCover = sameTrack ? Cover : null;
+            byte[]? thumb = existingCover == null ? await ReadThumbnailAsync(props?.Thumbnail) : null;
             if (version != _refreshVersion) return;
 
             await ApplyAsync(version, session, appId, trackKey, playing, title, artist, album,
-                thumb, tStart, pos, duration, updatedAt);
+                thumb, tStart, pos, duration, updatedAt, existingCover);
         }
 
         private static async Task<byte[]?> ReadThumbnailAsync(IRandomAccessStreamReference? thumbnail)
@@ -579,6 +626,31 @@ namespace WindowsNotch.Services
                 {
                     _lastLongBrowserTrack = new BrowserTrackSnapshot(
                         trackKey, title, artist, album, cover, duration);
+                }
+
+                if (_pendingToggleTarget is bool target)
+                {
+                    if (playing == target)
+                    {
+                        _pendingToggleTarget = null;
+                        _pendingToggleExpiresUtc = DateTimeOffset.MinValue;
+                    }
+                    else if (DateTimeOffset.UtcNow < _pendingToggleExpiresUtc
+                        && Equals(session, _activeSession)
+                        && string.Equals(trackKey, _confirmedTrackKey, StringComparison.OrdinalIgnoreCase))
+                    {
+                        playing = target;
+                        if (!playing)
+                        {
+                            position = Position;
+                            updatedAtUtc = DateTimeOffset.UtcNow;
+                        }
+                    }
+                    else
+                    {
+                        _pendingToggleTarget = null;
+                        _pendingToggleExpiresUtc = DateTimeOffset.MinValue;
+                    }
                 }
 
                 bool resumedFromPause = !IsPlaying && playing;
