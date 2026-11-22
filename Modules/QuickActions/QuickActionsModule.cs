@@ -40,6 +40,7 @@ namespace WindowsNotch.Modules.QuickActions
         private QuickActionsJiggleController? _jiggleController;
         private QuickActionsSubView _activeSubView = QuickActionsSubView.None;
         private bool _isSubViewPinned;
+        private bool _suppressNextSubViewEnterAnim;
         private bool _isListening;
         private bool _isDraggingVolume;
         private bool _showAudioDrawer;
@@ -254,6 +255,14 @@ namespace WindowsNotch.Modules.QuickActions
             DockPanel.SetDock(left, Dock.Left);
             header.Children.Add(left);
 
+            var closeBtn = NotchDesign.CreateIconActionButton(
+                NotchIconKind.Close,
+                L.T("qa.subview.back"),
+                CloseSubView,
+                size: 28);
+            DockPanel.SetDock(closeBtn, Dock.Right);
+            header.Children.Add(closeBtn);
+
             var pinBtn = NotchDesign.CreateRoundedButton(
                 NotchDesign.CreateVectorIcon(
                     NotchIconKind.Pin,
@@ -269,6 +278,7 @@ namespace WindowsNotch.Modules.QuickActions
             pinBtn.Width = 28;
             pinBtn.Height = 28;
             pinBtn.VerticalAlignment = VerticalAlignment.Center;
+            pinBtn.Margin = new Thickness(0, 0, 6, 0);
             pinBtn.Opacity = _isSubViewPinned ? 1.0 : 0.0;
             pinBtn.IsHitTestVisible = _isSubViewPinned;
             DockPanel.SetDock(pinBtn, Dock.Right);
@@ -317,19 +327,22 @@ namespace WindowsNotch.Modules.QuickActions
             {
                 if (_isSubViewPinned)
                 {
+                    _isSubViewPinned = false;
                     CloseSubView();
+                    RaiseCollapseRequested();
                     return;
                 }
 
                 _isSubViewPinned = true;
-                pinBtn.Background = NotchDesign.AccentPrimaryBrush;
-                pinBtn.ToolTip = L.T("qa.subview.unpin");
-                pinBtn.Content = NotchDesign.CreateVectorIcon(NotchIconKind.Pin, 14, Brushes.White, 2.1);
-                UpdatePinVisibility(true);
+                _suppressNextSubViewEnterAnim = true;
+                RebuildExpandedUi();
                 RaiseStateChanged();
             };
 
-            NotchDesign.AnimateSubViewEnter(container, slideY: 8, durationMs: NotchDesign.MicroTransitionMs);
+            if (_suppressNextSubViewEnterAnim)
+                _suppressNextSubViewEnterAnim = false;
+            else
+                NotchDesign.AnimateSubViewEnter(container, slideY: 8, durationMs: NotchDesign.MicroTransitionMs);
             return container;
         }
 

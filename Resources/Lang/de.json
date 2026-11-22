@@ -502,7 +502,7 @@
   "qa.tile.recycle_tooltip": "Papierkorb öffnen",
   "qa.subview.back": "Zurück zum Control Center",
   "qa.subview.pin": "Ansicht anpinnen (bleibt beim Raustabben & Tab-Wechsel offen)",
-  "qa.subview.unpin": "Pin lösen (zurück zum Control Center)",
+  "qa.subview.unpin": "Pin lösen & schließen",
 
   "songrec.enable_hint": "Musikerkennung in Einstellungen → Privatsphäre aktivieren.",
   "songrec.canceled": "Abgebrochen.",
