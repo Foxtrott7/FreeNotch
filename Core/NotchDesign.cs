@@ -1097,5 +1097,103 @@ namespace WindowsNotch.Core
             if (cached != null)
                 scrollViewer.Resources[typeof(System.Windows.Controls.Primitives.ScrollBar)] = cached;
         }
+
+        /// <summary>Erstellt ein abgerundetes ContextMenu im Notchify-OLED-Design (12 px Radius, 1 px Border).</summary>
+        public static ContextMenu CreateContextMenu(params MenuItem[] items)
+        {
+            var template = new ControlTemplate(typeof(ContextMenu));
+            var border = new FrameworkElementFactory(typeof(Border));
+            border.SetValue(Border.BackgroundProperty, NotchBackgroundBrush);
+            border.SetValue(Border.BorderBrushProperty, GetFrozenBrush(Color.FromArgb(0x28, 0xFF, 0xFF, 0xFF)));
+            border.SetValue(Border.BorderThicknessProperty, new Thickness(1));
+            border.SetValue(Border.CornerRadiusProperty, new CornerRadius(RadiusInner));
+            border.SetValue(Border.PaddingProperty, new Thickness(5));
+            border.SetValue(FrameworkElement.MinWidthProperty, 176.0);
+            border.SetValue(UIElement.SnapsToDevicePixelsProperty, true);
+            border.SetValue(UIElement.EffectProperty, new System.Windows.Media.Effects.DropShadowEffect
+            {
+                Color = Colors.Black,
+                BlurRadius = 18,
+                ShadowDepth = 4,
+                Opacity = 0.65
+            });
+
+            var presenter = new FrameworkElementFactory(typeof(ItemsPresenter));
+            border.AppendChild(presenter);
+            template.VisualTree = border;
+
+            var menu = new ContextMenu
+            {
+                Background = Brushes.Transparent,
+                BorderThickness = new Thickness(0),
+                HasDropShadow = false,
+                Template = template
+            };
+
+            foreach (var item in items)
+                menu.Items.Add(item);
+
+            return menu;
+        }
+
+        /// <summary>Erstellt einen gestylten ContextMenu-Eintrag mit linkem Vektor-Icon und Hover-Pill.</summary>
+        public static MenuItem CreateContextMenuItem(
+            string header,
+            NotchIconKind icon,
+            Action onClick,
+            Brush? iconBrush = null,
+            Brush? foreground = null)
+        {
+            var template = new ControlTemplate(typeof(MenuItem));
+            var bd = new FrameworkElementFactory(typeof(Border));
+            bd.Name = "bd";
+            bd.SetValue(Border.BackgroundProperty, Brushes.Transparent);
+            bd.SetValue(Border.CornerRadiusProperty, new CornerRadius(8));
+            bd.SetValue(Border.PaddingProperty, new Thickness(9, 6, 12, 6));
+            bd.SetValue(Border.MarginProperty, new Thickness(0, 1, 0, 1));
+
+            var grid = new FrameworkElementFactory(typeof(Grid));
+            var colIcon = new FrameworkElementFactory(typeof(ColumnDefinition));
+            colIcon.SetValue(ColumnDefinition.WidthProperty, GridLength.Auto);
+            var colText = new FrameworkElementFactory(typeof(ColumnDefinition));
+            colText.SetValue(ColumnDefinition.WidthProperty, new GridLength(1, GridUnitType.Star));
+            grid.AppendChild(colIcon);
+            grid.AppendChild(colText);
+
+            var iconPresenter = new FrameworkElementFactory(typeof(ContentPresenter));
+            iconPresenter.SetValue(ContentPresenter.ContentSourceProperty, "Icon");
+            iconPresenter.SetValue(Grid.ColumnProperty, 0);
+            iconPresenter.SetValue(FrameworkElement.MarginProperty, new Thickness(0, 0, 9, 0));
+            iconPresenter.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
+
+            var textPresenter = new FrameworkElementFactory(typeof(ContentPresenter));
+            textPresenter.SetValue(ContentPresenter.ContentSourceProperty, "Header");
+            textPresenter.SetValue(Grid.ColumnProperty, 1);
+            textPresenter.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
+
+            grid.AppendChild(iconPresenter);
+            grid.AppendChild(textPresenter);
+            bd.AppendChild(grid);
+
+            var hoverTrigger = new Trigger { Property = MenuItem.IsHighlightedProperty, Value = true };
+            hoverTrigger.Setters.Add(new Setter(Border.BackgroundProperty, ControlHoverBrush, "bd"));
+
+            template.VisualTree = bd;
+            template.Triggers.Add(hoverTrigger);
+
+            var item = new MenuItem
+            {
+                Header = header,
+                Icon = CreateVectorIcon(icon, 13.5, iconBrush ?? TextSecondaryBrush),
+                Foreground = foreground ?? TextPrimaryBrush,
+                FontFamily = UiTextFont,
+                FontSize = 12,
+                FontWeight = FontWeights.Medium,
+                Cursor = Cursors.Hand,
+                Template = template
+            };
+            item.Click += (_, _) => onClick();
+            return item;
+        }
     }
 }

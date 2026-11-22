@@ -533,14 +533,6 @@
                                                    Text="{ui:Loc settings.appearance.pos_hint}" />
                                     </StackPanel>
                                 </Grid>
-
-                                <Border Height="1" Background="{DynamicResource DividerBg}" Margin="0,14" />
-
-                                <TextBlock Text="{ui:Loc settings.appearance.theme_title}" Style="{StaticResource CardTitle}" />
-                                <TextBlock Style="{StaticResource MutedHint}" Margin="0,3,0,8"
-                                           Text="{ui:Loc settings.appearance.theme_hint}" />
-                                <ComboBox x:Name="ThemeBox" Width="290" HorizontalAlignment="Left"
-                                          SelectionChanged="ThemeBox_SelectionChanged" />
                             </StackPanel>
                         </Border>
 

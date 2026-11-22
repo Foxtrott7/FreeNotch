@@ -350,16 +350,6 @@ namespace WindowsNotch.UI
             };
             StyleBox.SelectedIndex = styleIdx;
 
-            int themeIdx = ThemeBox.SelectedIndex >= 0 ? ThemeBox.SelectedIndex : (int)_s.Theme;
-            ThemeBox.ItemsSource = new[]
-            {
-                L.T("settings.appearance.theme_dark"),
-                L.T("settings.appearance.theme_dark_glass"),
-                L.T("settings.appearance.theme_light"),
-                L.T("settings.appearance.theme_light_glass")
-            };
-            ThemeBox.SelectedIndex = themeIdx;
-
             int fpsIdx = FrameRateBox.SelectedIndex >= 0
                 ? FrameRateBox.SelectedIndex
                 : _s.TargetFrameRate switch { <= 60 => 0, <= 120 => 1, <= 144 => 2, _ => 3 };
@@ -473,7 +463,7 @@ namespace WindowsNotch.UI
             _s.Profile = (ProfileType)Math.Max(0, ProfileBox.SelectedIndex);
             _s.Mode = (InteractionMode)Math.Max(0, ModeBox.SelectedIndex);
             _s.Style = (NotchStyle)Math.Max(0, StyleBox.SelectedIndex);
-            _s.Theme = (NotchTheme)Math.Max(0, ThemeBox.SelectedIndex);
+            _s.Theme = NotchTheme.Dark;
             _s.TargetFrameRate = FrameRateBox.SelectedIndex switch
             {
                 0 => 60,

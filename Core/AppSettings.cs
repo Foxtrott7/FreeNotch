@@ -350,6 +350,8 @@ namespace WindowsNotch.Core
                 _ => 240
             };
 
+            Theme = NotchTheme.Dark; // Einheitlicher OLED-Dark-Standard (v1.0.2)
+
             if (string.IsNullOrWhiteSpace(AccentThemeId))
                 AccentThemeId = "indigo-violet";
             CustomAccentStartHex = NotchDesign.NormalizeHex(CustomAccentStartHex, "#2822A8");

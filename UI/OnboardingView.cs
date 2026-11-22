@@ -134,35 +134,9 @@ namespace WindowsNotch.UI
             var styleStack = new StackPanel();
             styleStack.Children.Add(BuildSectionLabel(L.T("onboarding.section_style")));
 
-            var themeRow = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 6, 0, 10) };
-            foreach (var (theme, label) in new[]
-            {
-                (NotchTheme.Dark, "Dark"),
-                (NotchTheme.DarkGlass, "DarkGlass"),
-                (NotchTheme.Light, "Light"),
-                (NotchTheme.LightGlass, "LightGlass")
-            })
-            {
-                bool active = _draft.Theme == theme;
-                var pill = NotchDesign.CreateRoundedButton(
-                    label,
-                    () => ApplyLiveChange(s => s.Theme = theme),
-                    background: active ? NotchDesign.AccentPrimaryBrush : NotchDesign.ControlBackgroundBrush,
-                    hoverBackground: active ? NotchDesign.AccentHoverBrush : NotchDesign.ControlHoverBrush,
-                    foreground: active ? Brushes.White : NotchDesign.TextPrimaryBrush,
-                    cornerRadius: NotchDesign.RadiusSmall,
-                    padding: new Thickness(10, 5, 10, 5));
-                pill.Margin = new Thickness(0, 0, 6, 0);
-                themeRow.Children.Add(pill);
-            }
-            styleStack.Children.Add(themeRow);
-
-            var accentRow = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, _showHuePicker ? 6 : 10) };
-            bool isLight = _draft.Theme is NotchTheme.Light or NotchTheme.LightGlass;
-            var selBorder = isLight ? NotchDesign.GetFrozenBrush(Color.FromRgb(0x14, 0x14, 0x18)) : Brushes.White;
-            var unselBorder = NotchDesign.GetFrozenBrush(isLight
-                ? Color.FromArgb(0x24, 0x00, 0x00, 0x00)
-                : Color.FromArgb(0x30, 0xFF, 0xFF, 0xFF));
+            var accentRow = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 6, 0, _showHuePicker ? 6 : 10) };
+            var selBorder = Brushes.White;
+            var unselBorder = NotchDesign.GetFrozenBrush(Color.FromArgb(0x30, 0xFF, 0xFF, 0xFF));
 
             string[] curatedIds = { "mono-gray", "indigo-violet", "royal-blue", "cyan-ocean", "emerald", "amber-gold", "coral-red" };
             foreach (var presetId in curatedIds)

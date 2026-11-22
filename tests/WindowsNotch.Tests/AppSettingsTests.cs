@@ -120,5 +120,16 @@ namespace WindowsNotch.Tests
             Assert.Equal("Starker Regen", WeatherService.DescribeCondition(61, 6.0));
             Assert.Equal("Starker Regen", WeatherService.DescribeCondition(65, 0.5));
         }
+
+        [Fact]
+        public void Normalize_ForcesUnifiedOledDarkTheme()
+        {
+            foreach (var legacyTheme in new[] { NotchTheme.DarkGlass, NotchTheme.Light, NotchTheme.LightGlass })
+            {
+                var settings = new AppSettings { Theme = legacyTheme };
+                settings.Normalize();
+                Assert.Equal(NotchTheme.Dark, settings.Theme);
+            }
+        }
     }
 }

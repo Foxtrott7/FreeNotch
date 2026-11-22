@@ -183,14 +183,9 @@ namespace WindowsNotch.Modules.FileTray
                     OpenFilePicker();
             };
 
-            var bgMenu = new ContextMenu();
-            var addMenu = new MenuItem { Header = L.T("filetray.menu_add") };
-            addMenu.Click += (_, _) => OpenFilePicker();
-            var clearMenu = new MenuItem { Header = L.T("filetray.menu_clear_unpinned") };
-            clearMenu.Click += (_, _) => ClearUnpinned();
-            bgMenu.Items.Add(addMenu);
-            bgMenu.Items.Add(clearMenu);
-            _dropContainer.ContextMenu = bgMenu;
+            _dropContainer.ContextMenu = NotchDesign.CreateContextMenu(
+                NotchDesign.CreateContextMenuItem(L.T("filetray.menu_add"), NotchIconKind.Plus, OpenFilePicker),
+                NotchDesign.CreateContextMenuItem(L.T("filetray.menu_clear_unpinned"), NotchIconKind.Trash, ClearUnpinned));
 
             RebuildList();
             return _dropContainer;
@@ -394,21 +389,28 @@ namespace WindowsNotch.Modules.FileTray
             card.Child = tile;
 
             // Verwaltung per Rechtsklick-Kontextmenü (keine störenden Pin-/X-Buttons)
-            var menu = new ContextMenu();
-            var pinMenu = new MenuItem { Header = item.IsPinned ? L.T("filetray.unpin") : L.T("filetray.pin") };
-            pinMenu.Click += (_, _) => TogglePin(item);
-            menu.Items.Add(pinMenu);
+            var menu = NotchDesign.CreateContextMenu(
+                NotchDesign.CreateContextMenuItem(
+                    item.IsPinned ? L.T("filetray.unpin") : L.T("filetray.pin"),
+                    NotchIconKind.Pin,
+                    () => TogglePin(item),
+                    iconBrush: item.IsPinned ? NotchDesign.AccentPrimaryBrush : null));
 
             if (exists)
             {
-                var revealMenu = new MenuItem { Header = L.T("filetray.reveal") };
-                revealMenu.Click += (_, _) => RevealInExplorer(item);
-                menu.Items.Add(revealMenu);
+                menu.Items.Add(NotchDesign.CreateContextMenuItem(
+                    L.T("filetray.reveal"),
+                    NotchIconKind.Folder,
+                    () => RevealInExplorer(item)));
             }
 
-            var removeMenu = new MenuItem { Header = L.T("filetray.remove") };
-            removeMenu.Click += (_, _) => RemoveItem(item);
-            menu.Items.Add(removeMenu);
+            var redBrush = NotchDesign.GetFrozenBrush(NotchDesign.AccentRed);
+            menu.Items.Add(NotchDesign.CreateContextMenuItem(
+                L.T("filetray.remove"),
+                NotchIconKind.Trash,
+                () => RemoveItem(item),
+                iconBrush: redBrush,
+                foreground: redBrush));
             card.ContextMenu = menu;
 
             // Herausziehen in andere Apps ermöglichen + Doppelklick öffnet im Explorer

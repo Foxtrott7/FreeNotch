@@ -2,24 +2,20 @@ using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
-using Microsoft.Win32;
 using Forms = System.Windows.Forms;
 
 namespace WindowsNotch.Core
 {
     /// <summary>
-    /// Rendert ein kontrastangepasstes Vektor-Tray-Icon im Notchify-Design für helle und dunkle Taskleisten.
+    /// Rendert das FreeNotch-Tray-Icon als abgerundetes App-Badge mit Notch-Silhouette und „FN“-Monogramm.
     /// </summary>
     internal static class TrayIconRenderer
     {
-        private const string PersonalizeKeyPath =
-            @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize";
-
         public static Icon CreateTrayIcon(System.Windows.Media.Color accentColor, bool muted = false)
         {
             try
             {
-                return RenderIcon(accentColor, muted, IsLightTaskbar());
+                return RenderIcon(accentColor, muted);
             }
             catch (Exception ex)
             {
@@ -28,10 +24,17 @@ namespace WindowsNotch.Core
             }
         }
 
-        private static Icon RenderIcon(System.Windows.Media.Color accentColor, bool muted, bool lightTaskbar)
+        private static Icon RenderIcon(System.Windows.Media.Color accentColor, bool muted)
         {
             int size = Math.Max(32, Forms.SystemInformation.SmallIconSize.Width);
             float s = size / 32f;
+
+            Color badgeAccent = muted
+                ? Color.FromArgb(0xFF, 0x71, 0x71, 0x7A)
+                : Color.FromArgb(0xFF, accentColor.R, accentColor.G, accentColor.B);
+            Color fgColor = muted
+                ? Color.FromArgb(0xFF, 0xD4, 0xD4, 0xD8)
+                : Color.White;
 
             using var bmp = new Bitmap(size, size, PixelFormat.Format32bppArgb);
             using (var g = Graphics.FromImage(bmp))
@@ -41,47 +44,45 @@ namespace WindowsNotch.Core
                 g.CompositingQuality = CompositingQuality.HighQuality;
                 g.Clear(Color.Transparent);
 
-                var frameRect = new RectangleF(3f * s, 5f * s, 26f * s, 22f * s);
-                using var framePath = CreateRoundedRectPath(frameRect, 5.5f * s);
+                // Abgerundetes OLED-App-Badge mit subtilem Akzent-Schimmer unten
+                var badgeRect = new RectangleF(2f * s, 2f * s, 28f * s, 28f * s);
+                using var badgePath = CreateRoundedRectPath(badgeRect, 7.5f * s);
+                Color topBg = Color.FromArgb(0xFF, 0x0A, 0x0A, 0x0E);
+                Color bottomBg = Color.FromArgb(
+                    0xFF,
+                    (byte)(0x0A + (badgeAccent.R - 0x0A) * 0.16f),
+                    (byte)(0x0A + (badgeAccent.G - 0x0A) * 0.16f),
+                    (byte)(0x0E + (badgeAccent.B - 0x0E) * 0.16f));
+                using var bgBrush = new LinearGradientBrush(badgeRect, topBg, bottomBg, LinearGradientMode.Vertical);
+                g.FillPath(bgBrush, badgePath);
 
-                // Dezente Glasfläche passend zum Taskleisten-Kontrast
-                Color glassTop = lightTaskbar
-                    ? Color.FromArgb(30, 18, 18, 24)
-                    : Color.FromArgb(44, 255, 255, 255);
-                Color glassBottom = lightTaskbar
-                    ? Color.FromArgb(14, 18, 18, 24)
-                    : Color.FromArgb(16, 255, 255, 255);
-                using var glassBrush = new LinearGradientBrush(frameRect, glassTop, glassBottom, LinearGradientMode.Vertical);
-                g.FillPath(glassBrush, framePath);
-
-                // Oben angedockte OLED-Notch mit feinem Kontur-Saum für Erkennbarkeit bei 16x16
-                var notchRect = new RectangleF(8f * s, 5.25f * s, 16f * s, 10.75f * s);
-                using var notchPath = CreateNotchPath(notchRect, 4.4f * s);
-                using var notchBrush = new SolidBrush(Color.FromArgb(0xFF, 0x09, 0x09, 0x0B));
+                // Oben angedockte Notch-Silhouette in Akzentfarbe
+                var notchRect = new RectangleF(10f * s, 2.2f * s, 12f * s, 3.6f * s);
+                using var notchPath = CreateNotchPath(notchRect, 1.8f * s);
+                using var notchBrush = new SolidBrush(badgeAccent);
                 g.FillPath(notchBrush, notchPath);
 
-                Color rimColor = lightTaskbar
-                    ? Color.FromArgb(85, 255, 255, 255)
-                    : Color.FromArgb(145, 232, 232, 240);
-                using var rimPen = new Pen(rimColor, 1.1f * s);
-                g.DrawPath(rimPen, notchPath);
+                // Kontraststarker Akzent-Rahmen um das Badge
+                using var borderPen = new Pen(badgeAccent, 2f * s);
+                g.DrawPath(borderPen, badgePath);
 
-                // Display-Rahmen zuletzt zeichnen, damit die Notch oben bündig andockt
-                Color frameColor = lightTaskbar
-                    ? Color.FromArgb(238, 24, 24, 28)
-                    : Color.FromArgb(242, 240, 240, 246);
-                using var framePen = new Pen(frameColor, 2f * s);
-                g.DrawPath(framePen, framePath);
+                // Geometrisches „FN“-Monogramm (gestochen scharf auch bei 16×16)
+                using var fgPen = new Pen(fgColor, 2.5f * s)
+                {
+                    StartCap = LineCap.Round,
+                    EndCap = LineCap.Round,
+                    LineJoin = LineJoin.Round
+                };
 
-                // Zentrierter Akzent- oder Stumm-Statuspunkt in der Notch (ausgerichtet auf 16x16-Raster)
-                Color dotColor = muted
-                    ? Color.FromArgb(0xFF, 0x71, 0x71, 0x7A)
-                    : Color.FromArgb(0xFF, accentColor.R, accentColor.G, accentColor.B);
-                float dotDiameter = 6f * s;
-                float dotX = (size - dotDiameter) * 0.5f;
-                float dotY = 8f * s;
-                using var dotBrush = new SolidBrush(dotColor);
-                g.FillEllipse(dotBrush, dotX, dotY, dotDiameter, dotDiameter);
+                // „F“
+                g.DrawLine(fgPen, 8.2f * s, 11.2f * s, 8.2f * s, 22.8f * s);
+                g.DrawLine(fgPen, 8.2f * s, 11.2f * s, 14.2f * s, 11.2f * s);
+                g.DrawLine(fgPen, 8.2f * s, 16.8f * s, 12.8f * s, 16.8f * s);
+
+                // „N“
+                g.DrawLine(fgPen, 17.4f * s, 22.8f * s, 17.4f * s, 11.2f * s);
+                g.DrawLine(fgPen, 17.4f * s, 11.2f * s, 23.4f * s, 22.8f * s);
+                g.DrawLine(fgPen, 23.4f * s, 22.8f * s, 23.4f * s, 11.2f * s);
             }
 
             IntPtr hIcon = bmp.GetHicon();
@@ -94,20 +95,6 @@ namespace WindowsNotch.Core
             {
                 if (hIcon != IntPtr.Zero)
                     NativeMethods.DestroyIcon(hIcon);
-            }
-        }
-
-        private static bool IsLightTaskbar()
-        {
-            try
-            {
-                using var key = Registry.CurrentUser.OpenSubKey(PersonalizeKeyPath);
-                return key?.GetValue("SystemUsesLightTheme") is int value && value == 1;
-            }
-            catch (Exception ex)
-            {
-                App.LogError(ex);
-                return false;
             }
         }
 
