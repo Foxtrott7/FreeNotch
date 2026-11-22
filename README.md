@@ -51,8 +51,9 @@ FreeNotch is designed for transparent, verifiable execution on Windows 10/11:
 
 - **Hardened Local Services**: `PhoneTransferService` sanitizes filenames against path traversal and reserved Windows device names, verifies directory containment, caps concurrent connections, and validates tokens using `CryptographicOperations.FixedTimeEquals`. External links opened from OCR or Clipboard History enforce `http`/`https` allowlisting; all SQLite queries are parameterized.
 - **Automated CI Verification**: Every push and pull request is built and tested (including localization parity, settings normalization, and security tests) via [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
-- **Reproducible Releases & Code Signing**: Release binaries are built cleanly from this repository via [`.github/workflows/release.yml`](.github/workflows/release.yml) and published with `SHA256SUMS.txt`.
-  > Free code signing provided by [SignPath.io](https://signpath.io/), using a certificate by [SignPath Foundation](https://signpath.org/).
+- **Reproducible Releases & Code Signing Policy**: Release binaries are built cleanly from this repository via [`.github/workflows/release.yml`](.github/workflows/release.yml) and published with `SHA256SUMS.txt`.
+  - **Team & Review**: Maintainer & release approver is [@Foxtrott7](https://github.com/Foxtrott7). Releases are triggered exclusively from tagged commits on `master` through GitHub Actions.
+  - **Code Signing Status**: Free open-source code signing via [SignPath.io](https://signpath.io/) ([SignPath Foundation](https://signpath.org/)) is integrated into the release workflow and currently **pending approval** (until approved, release archives are unsigned and verifiable via `SHA256SUMS.txt`).
 - **Policies**: Full details on data handling and vulnerability reporting are documented in [PRIVACY.md](PRIVACY.md) and [SECURITY.md](SECURITY.md).
 
 ---

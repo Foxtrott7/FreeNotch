@@ -26,4 +26,4 @@ You can expect an initial response within a few days, and fixes will be coordina
 - **Unprivileged Execution**: FreeNotch runs as a standard user (`asInvoker` manifest) and installs per-user into `%LocalAppData%\Programs\WindowsNotch`.
 - **Hardened Local Phone Transfer**: Uploaded filenames are sanitized against path traversal and reserved Windows device names, verified to stay inside the target directory, rate-limited with concurrent connection caps and header timeouts, and protected by constant-time (`FixedTimeEquals`) token validation.
 - **Strict URI & SQLite Safety**: External links opened from OCR or Clipboard History enforce `http`/`https` scheme allowlisting; all SQLite queries use parameterized commands.
-- **Reproducible Release Integrity**: Release archives ship with `SHA256SUMS.txt` and SignPath.io Authenticode signing integration.
+- **Reproducible Release Integrity**: Release archives ship with `SHA256SUMS.txt`; SignPath.io Authenticode signing is integrated into the release workflow (pending SignPath Foundation approval).
