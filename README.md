@@ -26,6 +26,8 @@ No admin rights required.
 
 Checksums are in `SHA256SUMS.txt`.
 
+Free code signing provided by [SignPath.io](https://signpath.io/), using a certificate by [SignPath Foundation](https://signpath.org/).
+
 ## Build from Source
 
 Requires Windows 10/11 (x64) and the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0).
