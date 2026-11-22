@@ -30,6 +30,26 @@ namespace WindowsNotch.Modules.Finance
 
         public double ChangePercent =>
             PreviousClose > 0 ? ((Price - PreviousClose) / PreviousClose) * 100.0 : 0.0;
+
+        /// <summary>
+        /// Berechnet die prozentuale Kursänderung passend zum gewählten Zeitraum (1D, 1W, 1M, 1Y, 5Y, ALL, LIVE).
+        /// </summary>
+        public double GetChangePercent(string range)
+        {
+            if (string.Equals(range, "1D", StringComparison.OrdinalIgnoreCase) && PreviousClose > 0 && Price > 0)
+                return ChangePercent;
+
+            lock (this)
+            {
+                if (Sparklines.TryGetValue(range, out var sp) && sp.Count >= 2 && sp[0] > 0)
+                {
+                    double latest = Price > 0 ? Price : sp[^1];
+                    return ((latest - sp[0]) / sp[0]) * 100.0;
+                }
+            }
+
+            return string.Equals(range, "LIVE", StringComparison.OrdinalIgnoreCase) ? 0.0 : ChangePercent;
+        }
     }
 
     public sealed record FinanceSearchResult(string Symbol, string Name, string QuoteType, string Exchange);
@@ -67,6 +87,7 @@ namespace WindowsNotch.Modules.Finance
 
         public event Action<string>? QuoteUpdated;
         public event Action? FavoritesChanged;
+        public event Action? RangeChanged;
 
         private FinanceService()
         {
@@ -189,6 +210,7 @@ namespace WindowsNotch.Modules.Finance
             if (SettingsService.Current.FinanceRange == range) return;
 
             SettingsService.UpdateQuiet(s => s.FinanceRange = range);
+            RangeChanged?.Invoke();
 
             string? active = GetActiveSymbol();
             if (!string.IsNullOrEmpty(active))

@@ -418,14 +418,18 @@ namespace WindowsNotch.Modules.Finance
                 }
 
                 priceText.Text = FinanceService.FormatPrice(quote.Price, quote.Currency);
-                double pct = quote.ChangePercent;
+                double pct = quote.GetChangePercent(activeRange);
                 bool isUp = pct >= 0;
                 changeText.Text = FinanceService.FormatChangePercent(pct);
                 changeText.Foreground = new SolidColorBrush(isUp ? NotchDesign.AccentGreen : NotchDesign.AccentRed);
 
                 if (activeRange != "LIVE")
                 {
-                    IReadOnlyList<double>? points = quote.Sparklines.TryGetValue(activeRange, out var sp) ? sp : null;
+                    IReadOnlyList<double>? points;
+                    lock (quote)
+                    {
+                        points = quote.Sparklines.TryGetValue(activeRange, out var sp) ? sp.ToList() : null;
+                    }
                     RenderSparkline(sparkHost, points, isUp ? NotchDesign.AccentGreen : NotchDesign.AccentRed, strokeThickness: 2.0, padY: 10);
                 }
             }
@@ -476,7 +480,10 @@ namespace WindowsNotch.Modules.Finance
                 }
 
                 raw[^1] = liveRenderPrice;
-                bool isUp = quote.ChangePercent >= 0;
+                double livePct = raw.Count >= 2 && raw[0] > 0 ? ((raw[^1] - raw[0]) / raw[0]) * 100.0 : quote.GetChangePercent("LIVE");
+                bool isUp = livePct >= 0;
+                changeText.Text = FinanceService.FormatChangePercent(livePct);
+                changeText.Foreground = new SolidColorBrush(isUp ? NotchDesign.AccentGreen : NotchDesign.AccentRed);
                 RenderSparkline(
                     sparkHost,
                     raw,

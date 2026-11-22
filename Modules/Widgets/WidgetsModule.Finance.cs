@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
@@ -42,6 +43,18 @@ namespace WindowsNotch.Modules.Widgets
                 TextTrimming = TextTrimming.CharacterEllipsis
             };
             leftRow.Children.Add(symbolText);
+
+            var rangeBadge = new TextBlock
+            {
+                Foreground = NotchDesign.TextMutedBrush,
+                FontFamily = NotchDesign.UiTextFont,
+                FontSize = 10,
+                FontWeight = FontWeights.SemiBold,
+                Margin = new Thickness(5, 1, 0, 0),
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            leftRow.Children.Add(rangeBadge);
+
             Grid.SetColumn(leftRow, 0);
             topGrid.Children.Add(leftRow);
 
@@ -101,9 +114,26 @@ namespace WindowsNotch.Modules.Widgets
             {
                 var svc = FinanceService.Instance;
                 var favs = svc.GetFavorites();
+                string activeRange = SettingsService.Current.FinanceRange;
+                string rangeLabelKey = activeRange switch
+                {
+                    "LIVE" => "finance.range_live",
+                    "1W" => "finance.range_1w",
+                    "1M" => "finance.range_1m",
+                    "1Y" => "finance.range_1y",
+                    "5Y" => "finance.range_5y",
+                    "ALL" => "finance.range_all",
+                    _ => "finance.range_1d"
+                };
+                rangeBadge.Text = L.T(rangeLabelKey);
+                rangeBadge.Foreground = activeRange == "LIVE"
+                    ? new SolidColorBrush(NotchDesign.AccentGreen)
+                    : NotchDesign.TextMutedBrush;
+
                 if (favs.Count == 0)
                 {
                     symbolText.Text = L.T("finance.bento_title");
+                    rangeBadge.Text = string.Empty;
                     changeText.Text = string.Empty;
                     priceText.Text = "—";
                     nameText.Text = L.T("finance.no_favorites");
@@ -127,13 +157,30 @@ namespace WindowsNotch.Modules.Widgets
                 priceText.Text = FinanceService.FormatPrice(quote.Price, quote.Currency);
                 nameText.Text = string.IsNullOrWhiteSpace(quote.Name) ? activeSym : quote.Name;
 
-                double pct = quote.ChangePercent;
+                double pct = quote.GetChangePercent(activeRange);
                 bool isUp = pct >= 0;
                 changeText.Text = FinanceService.FormatChangePercent(pct);
                 changeText.Foreground = new SolidColorBrush(isUp ? NotchDesign.AccentGreen : NotchDesign.AccentRed);
 
-                IReadOnlyList<double>? pts = quote.Sparklines.TryGetValue("1D", out var sp) ? sp : null;
-                FinanceModule.RenderSparkline(sparkHost, pts, isUp ? NotchDesign.AccentGreen : NotchDesign.AccentRed, strokeThickness: 1.6, padY: 4, fillAlpha: 0x22);
+                List<double>? pts = null;
+                lock (quote)
+                {
+                    if (quote.Sparklines.TryGetValue(activeRange, out var sp) && sp.Count >= 2)
+                        pts = sp.ToList();
+                    else if (activeRange == "LIVE")
+                        pts = new List<double> { quote.Price, quote.Price };
+                    else if (quote.Sparklines.TryGetValue("1D", out var fallback) && fallback.Count >= 2)
+                        pts = fallback.ToList();
+                }
+
+                FinanceModule.RenderSparkline(
+                    sparkHost,
+                    pts,
+                    isUp ? NotchDesign.AccentGreen : NotchDesign.AccentRed,
+                    strokeThickness: 1.6,
+                    padY: 4,
+                    showLiveTip: activeRange == "LIVE",
+                    fillAlpha: 0x22);
             }
 
             Point downPt = default;
@@ -168,16 +215,26 @@ namespace WindowsNotch.Modules.Widgets
                 });
             }
 
+            void OnRangeChanged()
+            {
+                card.Dispatcher.BeginInvoke(() =>
+                {
+                    if (!card.IsLoaded) return;
+                    UpdateFinance();
+                });
+            }
+
             sparkHost.SizeChanged += (_, _) => UpdateFinance();
 
             card.Loaded += (_, _) =>
             {
                 FinanceService.Instance.QuoteUpdated += OnQuoteUpdated;
                 FinanceService.Instance.FavoritesChanged += OnFavoritesChanged;
+                FinanceService.Instance.RangeChanged += OnRangeChanged;
                 FinanceService.Instance.StartTracking();
                 string? active = FinanceService.Instance.GetActiveSymbol();
                 if (!string.IsNullOrEmpty(active))
-                    _ = FinanceService.Instance.EnsureSymbolAsync(active, "1D", force: false);
+                    _ = FinanceService.Instance.EnsureSymbolAsync(active, SettingsService.Current.FinanceRange, force: false);
                 UpdateFinance();
             };
 
@@ -185,6 +242,7 @@ namespace WindowsNotch.Modules.Widgets
             {
                 FinanceService.Instance.QuoteUpdated -= OnQuoteUpdated;
                 FinanceService.Instance.FavoritesChanged -= OnFavoritesChanged;
+                FinanceService.Instance.RangeChanged -= OnRangeChanged;
                 FinanceService.Instance.StopTracking();
             };
 
