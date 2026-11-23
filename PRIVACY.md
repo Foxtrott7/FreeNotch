@@ -16,7 +16,6 @@ All network features are **disabled by default** and only connect when you expli
 - **Synced Lyrics**: Fetches time-synced lyrics from [LRCLIB](https://lrclib.net/) for the currently playing track.
 - **Website Favicons**: Downloads icons for saved URLs in Clipboard History.
 - **Finance Quotes**: Fetches stock/crypto market data for tickers in your watchlist.
-- **Music Recognition**: Sends a short, non-stored system-audio fingerprint snippet to Shazam discovery only when you explicitly trigger song identification.
 - **Temporary Online Phone Transfer**: Uploads a selected file to a temporary third-party host (`catbox.moe` / `0x0.st`) only when you explicitly choose online sharing.
 
 Each external service is governed by its own privacy policy. You can disable all online features at any time under **Settings → Privacy**.

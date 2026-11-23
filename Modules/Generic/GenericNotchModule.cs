@@ -35,7 +35,6 @@ namespace WindowsNotch.Modules.Generic
             "discord" => NotchIconKind.Discord,
             "filetransfer" => NotchIconKind.Phone,
             "downloads" => NotchIconKind.Download,
-            "musicrecognition" => NotchIconKind.Waveform,
             "lyrics" => NotchIconKind.Music,
             "screenocr" => NotchIconKind.Scan,
             "calendar" => NotchIconKind.Calendar,

@@ -905,12 +905,6 @@
                                 <CheckBox Content="{ui:Loc settings.privacy.favicons_enable}" IsChecked="{Binding OptInFavicons, Mode=TwoWay}" />
                                 <TextBlock Style="{StaticResource MutedHint}" Margin="0,3,0,0"
                                            Text="{ui:Loc settings.privacy.favicons_hint}" />
-
-                                <Border Height="1" Background="{DynamicResource DividerBg}" Margin="0,12" />
-
-                                <CheckBox Content="{ui:Loc settings.privacy.music_rec_enable}" IsChecked="{Binding OptInMusicRecognition, Mode=TwoWay}" />
-                                <TextBlock Style="{StaticResource MutedHint}" Margin="0,3,0,0"
-                                           Text="{ui:Loc settings.privacy.music_rec_hint}" />
                             </StackPanel>
                         </Border>
                     </StackPanel>

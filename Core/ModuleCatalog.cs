@@ -16,7 +16,6 @@ namespace WindowsNotch.Core
             new("notifications",   "Windows-Benachrichtigungen", false, true),
             new("media",           "Musik und Mediensteuerung",  false, true),
             new("lyrics",          "Synchronisierte Songtexte",  false, false),
-            new("musicrecognition","Musikerkennung",             false, false),
             new("clipboard",       "Zwischenablage",             false, false),
             new("filetray",        "File Tray",                  false, true),
             new("widgets",         "Widgets",                    false, true),

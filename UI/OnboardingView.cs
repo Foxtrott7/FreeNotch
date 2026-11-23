@@ -237,7 +237,6 @@ namespace WindowsNotch.UI
             AddOnlineOptInPill(onlineRow, L.T("onboarding.optin_weather"), _draft.OptInWeather, (s, on) => s.OptInWeather = on);
             AddOnlineOptInPill(onlineRow, L.T("onboarding.optin_lyrics"), _draft.OptInLyrics, (s, on) => s.OptInLyrics = on);
             AddOnlineOptInPill(onlineRow, L.T("onboarding.optin_favicons"), _draft.OptInFavicons, (s, on) => s.OptInFavicons = on);
-            AddOnlineOptInPill(onlineRow, L.T("onboarding.optin_music_rec"), _draft.OptInMusicRecognition, (s, on) => s.OptInMusicRecognition = on);
             root.Children.Add(onlineRow);
 
             // Fußzeile: Import links + "Live-Tour starten →" rechts

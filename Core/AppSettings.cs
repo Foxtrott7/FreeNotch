@@ -92,7 +92,7 @@ namespace WindowsNotch.Core
             "stopwatch", "hardware", "finance", "carousel"
         };
         public static readonly string[] DefaultFinanceFavorites = { "BTC-USD", "ETH-USD", "AAPL", "NVDA" };
-        public static readonly string[] DefaultQuickActionTileOrder = { "lock", "project", "song", "taskmgr", "explorer", "audio" };
+        public static readonly string[] DefaultQuickActionTileOrder = { "lock", "project", "calc", "taskmgr", "explorer", "audio" };
         public static readonly string[] DefaultQuickActionBarOrder = { "volume" };
 
         // Live-Activities (Anzeige im Ruhezustand ohne Hover)
@@ -134,7 +134,6 @@ namespace WindowsNotch.Core
         public string WeatherResolvedCity { get; set; } = string.Empty;
         public bool OptInLyrics { get; set; }
         public bool OptInFavicons { get; set; }
-        public bool OptInMusicRecognition { get; set; }
 
         // Finanzen (Zero-Config Kurse & Favoriten)
         public List<string>? FinanceFavorites { get; set; }
@@ -365,8 +364,9 @@ namespace WindowsNotch.Core
 
             var seen = new HashSet<string>();
             var slots = new List<string>(raw.Count);
-            foreach (var item in raw)
+            foreach (var rawItem in raw)
             {
+                string item = string.Equals(rawItem, "song", StringComparison.Ordinal) ? "calc" : rawItem;
                 if (string.IsNullOrWhiteSpace(item))
                 {
                     slots.Add(string.Empty);

@@ -14,32 +14,28 @@ using Microsoft.Win32;
 using Windows.Devices.Radios;
 using WindowsNotch.Core;
 using WindowsNotch.Modules.Bluetooth;
-using WindowsNotch.Modules.SongRecognition;
 using WindowsNotch.Services;
 
 namespace WindowsNotch.Modules.QuickActions
 {
     /// <summary>
     /// Control Center im ruhigen Notchify-Desktop-Stil:
-    /// Direkte Aktionen (Bluetooth, Projizieren, Task-Manager, Explorer),
-    /// Song-Erkennung sowie Lautstärke & allgemeine Audio-Ausgabe.
+    /// Direkte Aktionen (Bluetooth, Projizieren, Task-Manager, Explorer, Rechner, Soundmixer)
+    /// sowie Lautstärke &amp; allgemeine Audio-Ausgabe.
     /// </summary>
     public partial class QuickActionsModule : NotchModuleBase
     {
         private enum QuickActionsSubView
         {
             None,
-            SongRecognition,
             Calculator,
             SoundMixer
         }
 
         private readonly BluetoothAudioService _audioService = new();
-        private CancellationTokenSource? _recogCts;
         private Border? _expandedHost;
         private QuickActionsJiggleController? _jiggleController;
         private QuickActionsSubView _activeSubView = QuickActionsSubView.None;
-        private bool _isListening;
         private bool _isDraggingVolume;
         private bool _showAudioDrawer;
         private bool _showStoreDrawer;
@@ -59,7 +55,6 @@ namespace WindowsNotch.Modules.QuickActions
         {
             get
             {
-                if (_activeSubView == QuickActionsSubView.SongRecognition) return (450, 290);
                 if (_activeSubView == QuickActionsSubView.Calculator) return (316, 352);
                 if (_activeSubView == QuickActionsSubView.SoundMixer) return (460, 344);
 
@@ -88,7 +83,6 @@ namespace WindowsNotch.Modules.QuickActions
         {
             _jiggleController?.Detach();
             _audioService.Updated -= OnAudioUpdated;
-            _recogCts?.Cancel();
             StopMixerRefreshTimer();
             _activeSubView = QuickActionsSubView.None;
         }
@@ -96,8 +90,6 @@ namespace WindowsNotch.Modules.QuickActions
         public override void Dispose()
         {
             Stop();
-            _recogCts?.Dispose();
-            _recogCts = null;
             base.Dispose();
         }
 
@@ -107,7 +99,7 @@ namespace WindowsNotch.Modules.QuickActions
             {
                 if (_expandedHost != null && _expandedHost.IsLoaded &&
                     _activeSubView == QuickActionsSubView.None &&
-                    !_isListening && !_isDraggingVolume && _jiggleController?.IsJiggleMode != true)
+                    !_isDraggingVolume && _jiggleController?.IsJiggleMode != true)
                 {
                     _expandedHost.Child = BuildExpandedContent();
                 }
@@ -190,12 +182,6 @@ namespace WindowsNotch.Modules.QuickActions
             StopMixerRefreshTimer();
             _activeSubView = view;
 
-            if (view == QuickActionsSubView.SongRecognition && SettingsService.Current.OptInMusicRecognition)
-            {
-                _lastSongResult = null;
-                _ = StartSongRecognitionInSubViewAsync(skipInitialRebuild: true);
-            }
-
             RebuildExpandedUi();
             RaiseStateChanged();
         }
@@ -203,9 +189,6 @@ namespace WindowsNotch.Modules.QuickActions
         private void CloseSubView()
         {
             if (_activeSubView == QuickActionsSubView.None) return;
-            _recogCts?.Cancel();
-            _isListening = false;
-            _lastSongResult = null;
             StopMixerRefreshTimer();
             _activeSubView = QuickActionsSubView.None;
             RebuildExpandedUi();
@@ -334,8 +317,6 @@ namespace WindowsNotch.Modules.QuickActions
 
         private FrameworkElement BuildExpandedContent()
         {
-            if (_activeSubView == QuickActionsSubView.SongRecognition)
-                return BuildSongRecognitionSubView();
             if (_activeSubView == QuickActionsSubView.Calculator)
                 return BuildCalculatorSubView();
             if (_activeSubView == QuickActionsSubView.SoundMixer)
@@ -539,7 +520,6 @@ namespace WindowsNotch.Modules.QuickActions
 
         private Button? CreateTileById(string id)
         {
-            if (id == "song") return CreateSongRecognitionButton();
             if (id == "audio")
             {
                 var activeAudio = _audioService.AudioOutputs.FirstOrDefault(a => a.IsDefault);
@@ -573,20 +553,6 @@ namespace WindowsNotch.Modules.QuickActions
             var def = TileCatalog.FirstOrDefault(t => t.Id == id);
             if (def == null || def.Execute == null) return null;
             return CreateQuickTile(def.Icon, def.Label, false, def.Tooltip, def.Execute);
-        }
-
-        private Button CreateSongRecognitionButton()
-        {
-            string tooltip = !SettingsService.Current.OptInMusicRecognition
-                ? L.T("qa.song_rec_enable")
-                : L.T("qa.song_rec_tooltip");
-
-            return CreateQuickTile(
-                NotchIconKind.Waveform,
-                L.T("qa.song_rec"),
-                _isListening,
-                tooltip,
-                () => OpenSubView(QuickActionsSubView.SongRecognition));
         }
 
         private Border BuildVolumeCard()
@@ -912,7 +878,7 @@ namespace WindowsNotch.Modules.QuickActions
             {
                 if (_expandedHost != null && _expandedHost.IsLoaded &&
                     _activeSubView == QuickActionsSubView.None &&
-                    !_isListening && !_isDraggingVolume && _jiggleController?.IsJiggleMode != true)
+                    !_isDraggingVolume && _jiggleController?.IsJiggleMode != true)
                 {
                     RebuildExpandedUi();
                 }

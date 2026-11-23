@@ -28,7 +28,6 @@ namespace WindowsNotch.Modules.QuickActions
         {
             new("lock", NotchIconKind.Lock, () => OpenUri("rundll32.exe", "user32.dll,LockWorkStation")),
             new("project", NotchIconKind.Monitor, () => OpenUri("DisplaySwitch.exe")),
-            new("song", NotchIconKind.Waveform, null),
             new("taskmgr", NotchIconKind.Pulse, () => OpenUri("taskmgr.exe")),
             new("explorer", NotchIconKind.Folder, () => OpenUri("explorer.exe")),
             new("audio", NotchIconKind.Headphones, null),
