@@ -1338,10 +1338,47 @@ namespace WindowsNotch.UI
             e.Handled = true;
         }
 
+        private void TabScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e)
+            => UpdateTabScrollFadeMask();
+
         private void TabScrollViewer_SizeChanged(object sender, SizeChangedEventArgs e)
         {
+            UpdateTabScrollFadeMask();
             if (e.WidthChanged)
                 ScrollSelectedTabIntoView();
+        }
+
+        private void UpdateTabScrollFadeMask()
+        {
+            double scrollable = TabScrollViewer.ScrollableWidth;
+            double viewport = TabScrollViewer.ViewportWidth;
+            if (scrollable <= 1.0 || viewport <= 40.0)
+            {
+                if (TabScrollViewer.OpacityMask != null)
+                    TabScrollViewer.OpacityMask = null;
+                return;
+            }
+
+            double offset = TabScrollViewer.HorizontalOffset;
+            bool fadeLeft = offset > 1.0;
+            bool fadeRight = offset < scrollable - 1.0;
+
+            if (!fadeLeft && !fadeRight)
+            {
+                TabScrollViewer.OpacityMask = null;
+                return;
+            }
+
+            double fadeFrac = Math.Clamp(18.0 / viewport, 0.04, 0.16);
+            var stops = new GradientStopCollection(4);
+            stops.Add(new GradientStop(fadeLeft ? Color.FromArgb(0, 0, 0, 0) : Colors.Black, 0.0));
+            if (fadeLeft)
+                stops.Add(new GradientStop(Colors.Black, fadeFrac));
+            if (fadeRight)
+                stops.Add(new GradientStop(Colors.Black, 1.0 - fadeFrac));
+            stops.Add(new GradientStop(fadeRight ? Color.FromArgb(0, 0, 0, 0) : Colors.Black, 1.0));
+
+            TabScrollViewer.OpacityMask = new LinearGradientBrush(stops, new Point(0, 0.5), new Point(1, 0.5));
         }
 
         private void ScrollSelectedTabIntoView()
@@ -1366,12 +1403,14 @@ namespace WindowsNotch.UI
                 double left = pos.X;
                 double right = left + selectedBtn.ActualWidth;
                 double curOffset = TabScrollViewer.HorizontalOffset;
-                const double pad = 18.0;
+                const double pad = 22.0;
 
                 if (left - pad < curOffset)
                     TabScrollViewer.ScrollToHorizontalOffset(Math.Max(0, left - pad));
                 else if (right + pad > curOffset + viewportW)
                     TabScrollViewer.ScrollToHorizontalOffset(Math.Min(TabScrollViewer.ScrollableWidth, right + pad - viewportW));
+
+                UpdateTabScrollFadeMask();
             });
         }
 
