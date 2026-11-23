@@ -31,7 +31,6 @@ namespace WindowsNotch.Modules.Widgets
             new("stopwatch", NotchIconKind.Pulse, false),
             new("hardware", NotchIconKind.Cpu, false),
             new("finance", NotchIconKind.TrendingUp, false),
-            new("pet", NotchIconKind.Pet, false),
             new("carousel", NotchIconKind.Layers, true)
         };
 
@@ -230,8 +229,6 @@ namespace WindowsNotch.Modules.Widgets
                     }
                     SettingsService.UpdateQuiet(s => s.BentoCarouselPages = pages);
                 }
-                if (tileId == "pet")
-                    Modules.Pet.PetService.Instance.SetTamagotchiEnabled(true);
                 RebuildSlotVisual(targetSlot, "carousel");
                 RefreshStoreDrawerInPlace();
                 return;
@@ -241,8 +238,6 @@ namespace WindowsNotch.Modules.Widgets
                 order[targetSlot] = tileId;
             }
 
-            if (tileId == "pet")
-                Modules.Pet.PetService.Instance.SetTamagotchiEnabled(true);
             SettingsService.UpdateQuiet(s => s.BentoTileOrder = order);
             RebuildSlotVisual(targetSlot, order[targetSlot]);
             if (existingIdx >= 0)
@@ -260,11 +255,8 @@ namespace WindowsNotch.Modules.Widgets
             int activeCount = order.Count(id => !string.IsNullOrWhiteSpace(id));
             if (activeCount <= 1) return; // Mindestens 1 Kachel bleibt aktiv
 
-            string removedId = order[slot];
             order[slot] = string.Empty;
             SettingsService.UpdateQuiet(s => s.BentoTileOrder = order);
-            if (removedId == "pet")
-                Modules.Pet.PetService.Instance.SetTamagotchiEnabled(false);
             RebuildSlotVisual(slot, string.Empty);
             RefreshStoreDrawerInPlace();
         }

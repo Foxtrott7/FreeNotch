@@ -233,53 +233,12 @@ namespace WindowsNotch.UI
 
             // 3. Optionale Online-Dienste (Privacy Opt-in)
             root.Children.Add(BuildSectionLabel(L.T("onboarding.section_online")));
-            var onlineRow = new WrapPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 6, 0, 10) };
+            var onlineRow = new WrapPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 6, 0, 12) };
             AddOnlineOptInPill(onlineRow, L.T("onboarding.optin_weather"), _draft.OptInWeather, (s, on) => s.OptInWeather = on);
             AddOnlineOptInPill(onlineRow, L.T("onboarding.optin_lyrics"), _draft.OptInLyrics, (s, on) => s.OptInLyrics = on);
             AddOnlineOptInPill(onlineRow, L.T("onboarding.optin_favicons"), _draft.OptInFavicons, (s, on) => s.OptInFavicons = on);
             AddOnlineOptInPill(onlineRow, L.T("onboarding.optin_music_rec"), _draft.OptInMusicRecognition, (s, on) => s.OptInMusicRecognition = on);
             root.Children.Add(onlineRow);
-
-            // 4. Notch Pet & Augen (unabhängig voneinander konfigurierbar)
-            root.Children.Add(BuildSectionLabel(L.T("onboarding.section_pet")));
-            var petRow = new WrapPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 6, 0, 12) };
-            bool eyesOn = _draft.CollapsedLayout.TryGetValue(NotchInfo.PetEyes, out var eyesSlot) && eyesSlot != NotchSlot.Off;
-            bool clockOn = _draft.CollapsedLayout.TryGetValue(NotchInfo.Clock, out var clockSlot) && clockSlot != NotchSlot.Off;
-
-            AddOnlineOptInPill(petRow, L.T("onboarding.pet_eyes"), eyesOn, (s, on) =>
-            {
-                if (on)
-                {
-                    bool hasClock = s.CollapsedLayout.TryGetValue(NotchInfo.Clock, out var cs) && cs != NotchSlot.Off;
-                    s.CollapsedLayout[NotchInfo.PetEyes] = hasClock ? NotchSlot.Left : NotchSlot.Center;
-                }
-                else
-                {
-                    s.CollapsedLayout.Remove(NotchInfo.PetEyes);
-                    // Falls weder Augen noch Uhrzeit aktiv wären, Uhrzeit wiederherstellen
-                    if (s.CollapsedLayout.Count == 0)
-                        s.CollapsedLayout[NotchInfo.Clock] = NotchSlot.Center;
-                }
-            });
-
-            AddOnlineOptInPill(petRow, L.T("onboarding.pet_replace_clock"), eyesOn && !clockOn, (s, replaceClock) =>
-            {
-                if (replaceClock)
-                {
-                    s.CollapsedLayout.Remove(NotchInfo.Clock);
-                    s.CollapsedLayout[NotchInfo.PetEyes] = NotchSlot.Center;
-                }
-                else
-                {
-                    s.CollapsedLayout[NotchInfo.Clock] = NotchSlot.Center;
-                    if (s.CollapsedLayout.ContainsKey(NotchInfo.PetEyes))
-                        s.CollapsedLayout[NotchInfo.PetEyes] = NotchSlot.Left;
-                }
-            });
-
-            AddOnlineOptInPill(petRow, L.T("onboarding.pet_tamagotchi"), _draft.PetTamagotchiEnabled,
-                (s, on) => AppSettings.SetBentoPetTileEnabled(s, on));
-            root.Children.Add(petRow);
 
             // Fußzeile: Import links + "Live-Tour starten →" rechts
             var footer = new DockPanel { LastChildFill = false, Margin = new Thickness(0, 4, 0, 0) };

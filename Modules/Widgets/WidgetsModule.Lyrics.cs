@@ -415,8 +415,6 @@ namespace WindowsNotch.Modules.Widgets
 
         private void SetLyricsPinned(bool pinned)
         {
-            if (pinned && _isPetPinned)
-                SetPetPinned(false);
             _jiggleController?.CancelPendingPress();
             if (_bentoGrid == null || _lyricsTileCard == null || _lyricsFullscreenHost == null)
             {

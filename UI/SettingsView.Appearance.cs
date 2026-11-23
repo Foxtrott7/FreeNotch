@@ -145,39 +145,6 @@ namespace WindowsNotch.UI
                     optInRow.Children.Add(enableLink);
                     labelStack.Children.Add(optInRow);
                 }
-                else if (def.Id == NotchInfo.PetEyes)
-                {
-                    var petRow = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 1, 0, 0) };
-                    petRow.Children.Add(new TextBlock
-                    {
-                        Text = _s.PetTamagotchiEnabled
-                            ? L.T("settings.layout.pet_tama_on")
-                            : L.T("settings.layout.pet_tama_off"),
-                        Foreground = textSecondary,
-                        FontSize = 10.5,
-                        VerticalAlignment = VerticalAlignment.Center
-                    });
-                    var toggleLink = new TextBlock
-                    {
-                        Text = "· " + (_s.PetTamagotchiEnabled
-                            ? L.T("settings.layout.pet_tama_disable")
-                            : L.T("settings.layout.pet_tama_enable")),
-                        Foreground = accentBrush,
-                        FontSize = 10.5,
-                        FontWeight = FontWeights.SemiBold,
-                        Cursor = Cursors.Hand,
-                        Margin = new Thickness(5, 0, 0, 0),
-                        VerticalAlignment = VerticalAlignment.Center
-                    };
-                    toggleLink.MouseLeftButtonUp += (_, _) =>
-                    {
-                        AppSettings.SetBentoPetTileEnabled(_s, !_s.PetTamagotchiEnabled);
-                        BuildLayoutRows();
-                        UpdateLayoutPreview();
-                    };
-                    petRow.Children.Add(toggleLink);
-                    labelStack.Children.Add(petRow);
-                }
                 left.Children.Add(labelStack);
                 Grid.SetColumn(left, 0);
                 row.Children.Add(left);

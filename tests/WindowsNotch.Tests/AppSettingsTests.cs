@@ -133,35 +133,15 @@ namespace WindowsNotch.Tests
         }
 
         [Fact]
-        public void PetSettings_NormalizeAndToggleBentoTile_WorkIndependentlyOfNotchEyes()
+        public void NotchInfo_PetEyesSlot_IsSanitizedAndPreserved()
         {
-            var settings = new AppSettings
-            {
-                PetLevel = 0,
-                PetXp = -10,
-                PetHunger = 150,
-                PetEnergy = -5,
-                PetMoodScore = 200
-            };
+            var settings = new AppSettings();
             settings.CollapsedLayout[NotchInfo.PetEyes] = NotchSlot.Center;
+            settings.HoverLayout[NotchInfo.PetEyes] = NotchSlot.Left;
             settings.Normalize();
 
-            Assert.Equal(1, settings.PetLevel);
-            Assert.Equal(0, settings.PetXp);
-            Assert.Equal(100, settings.PetHunger);
-            Assert.Equal(0, settings.PetEnergy);
-            Assert.Equal(100, settings.PetMoodScore);
             Assert.Equal(NotchSlot.Center, settings.CollapsedLayout[NotchInfo.PetEyes]);
-            Assert.False(settings.PetTamagotchiEnabled);
-
-            AppSettings.SetBentoPetTileEnabled(settings, true);
-            Assert.True(settings.PetTamagotchiEnabled);
-            Assert.Contains("pet", settings.BentoTileOrder);
-
-            AppSettings.SetBentoPetTileEnabled(settings, false);
-            Assert.False(settings.PetTamagotchiEnabled);
-            Assert.DoesNotContain("pet", settings.BentoTileOrder);
-            Assert.Equal(NotchSlot.Center, settings.CollapsedLayout[NotchInfo.PetEyes]);
+            Assert.Equal(NotchSlot.Left, settings.HoverLayout[NotchInfo.PetEyes]);
         }
     }
 }

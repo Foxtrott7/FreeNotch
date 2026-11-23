@@ -50,7 +50,7 @@ namespace WindowsNotch.UI
         private DispatcherTimer? _tourDemoTimer;
         private OnboardingTourBar? _tourBar;
         private const double OnboardingWidth = 600;
-        private const double OnboardingHeight = 445;
+        private const double OnboardingHeight = 395;
         private double _lastCollapsedW = double.NaN;
         private double _lastCollapsedH = double.NaN;
         private bool? _lastCollapsedHasLive;
