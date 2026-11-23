@@ -21,7 +21,7 @@ namespace WindowsNotch.Services
         public static MediaPlayerService Instance => _instance.Value;
 
         public const string DefaultNoTrackTitle = "Keine Medienwiedergabe";
-        public const string DefaultNoTrackArtist = "Spotify, Browser o. Ä. starten";
+        public static string DefaultNoTrackArtist => L.T("media.no_track_hint");
 
         private static readonly TimeSpan BrowserInitialDebounce = TimeSpan.FromMilliseconds(800);
         private static readonly TimeSpan BrowserSwitchDebounce = TimeSpan.FromMilliseconds(2200);

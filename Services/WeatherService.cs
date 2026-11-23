@@ -292,7 +292,7 @@ namespace WindowsNotch.Services
             if (string.IsNullOrEmpty(city))
             {
                 Current = null;
-                LastError = "Stadt in Einstellungen festlegen";
+                LastError = L.T("weather.err_set_city");
                 WeatherUpdated?.Invoke();
                 return;
             }
@@ -357,12 +357,12 @@ namespace WindowsNotch.Services
                 }
                 else
                 {
-                    LastError = "Wetterdaten nicht verfügbar";
+                    LastError = L.T("weather.err_unavailable");
                 }
             }
             catch (Exception ex)
             {
-                LastError = "Verbindungsfehler";
+                LastError = L.T("weather.err_connection");
                 App.LogError(ex);
             }
             finally
@@ -471,26 +471,28 @@ namespace WindowsNotch.Services
             if (code is (>= 51 and <= 67) or (>= 80 and <= 82))
             {
                 if (precipitationMm >= 5.0 || code is 65 or 67 or 82)
-                    return "Starker Regen";
+                    return L.T("weather.cond_heavy_rain");
                 if (precipitationMm >= 1.5 || code is 55 or 57 or 63 or 81)
-                    return "Regen";
-                return code is (>= 51 and <= 57) && precipitationMm < 0.4 ? "Nieselregen" : "Leichter Regen";
+                    return L.T("weather.cond_rain");
+                return code is (>= 51 and <= 57) && precipitationMm < 0.4
+                    ? L.T("weather.cond_drizzle")
+                    : L.T("weather.cond_light_rain");
             }
             return DescribeWmoCode(code);
         }
 
         public static string DescribeWmoCode(int code) => code switch
         {
-            0 => "Klar",
-            1 => "Überwiegend klar",
-            2 => "Leicht bewölkt",
-            3 => "Bewölkt",
-            45 or 48 => "Nebel",
-            51 or 53 or 55 or 56 or 57 => "Nieselregen",
-            61 or 63 or 65 or 66 or 67 or 80 or 81 or 82 => "Regen",
-            71 or 73 or 75 or 77 or 85 or 86 => "Schnee",
-            95 or 96 or 99 => "Gewitter",
-            _ => "Wechselhaft"
+            0 => L.T("weather.cond_clear"),
+            1 => L.T("weather.cond_mostly_clear"),
+            2 => L.T("weather.cond_partly_cloudy"),
+            3 => L.T("weather.cond_cloudy"),
+            45 or 48 => L.T("weather.cond_fog"),
+            51 or 53 or 55 or 56 or 57 => L.T("weather.cond_drizzle"),
+            61 or 63 or 65 or 66 or 67 or 80 or 81 or 82 => L.T("weather.cond_rain"),
+            71 or 73 or 75 or 77 or 85 or 86 => L.T("weather.cond_snow"),
+            95 or 96 or 99 => L.T("weather.cond_thunderstorm"),
+            _ => L.T("weather.cond_changeable")
         };
 
         public static NotchIconKind MapWmoToIcon(int code, bool isDay = true) => code switch
