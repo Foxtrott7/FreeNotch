@@ -189,25 +189,7 @@ namespace WindowsNotch.UI
                     PowerScheduleService.TriggerSystemSleep();
                 }));
 
-            stack.Children.Add(CreateConfirmablePowerRow(
-                L.T("notch.power.restart"),
-                L.T("notch.power.restart_confirm"),
-                NotchIconKind.Reset,
-                NotchDesign.TextSecondaryBrush,
-                NotchDesign.TextPrimaryBrush,
-                NotchDesign.AccentPrimaryBrush,
-                () => PowerScheduleService.RunShutdownCommand("/r /t 0")));
-
-            stack.Children.Add(CreateConfirmablePowerRow(
-                L.T("notch.power.shutdown"),
-                L.T("notch.power.shutdown_confirm"),
-                NotchIconKind.Power,
-                redBrush,
-                redBrush,
-                redBrush,
-                () => PowerScheduleService.RunShutdownCommand("/s /t 0")));
-
-            // 5. Zeile: Zeitplan / Timer (zeigt aktiven Countdown-Badge rechts)
+            // 3. Zeile direkt unter Ruhemodus: Zeitplan / Timer (zeigt aktiven Countdown-Badge rechts)
             var scheduleBadge = new TextBlock
             {
                 Foreground = NotchDesign.AccentPrimaryBrush,
@@ -226,8 +208,7 @@ namespace WindowsNotch.UI
                 PowerScheduleService.Instance.IsActive ? NotchDesign.AccentPrimaryBrush : NotchDesign.TextSecondaryBrush,
                 NotchDesign.TextPrimaryBrush,
                 () => SwitchPowerSubView(openTimerView: true),
-                trailingBadge: scheduleBadge,
-                marginBottom: 0);
+                trailingBadge: scheduleBadge);
 
             void RefreshBadge()
             {
@@ -256,6 +237,25 @@ namespace WindowsNotch.UI
             };
 
             stack.Children.Add(scheduleRow);
+
+            stack.Children.Add(CreateConfirmablePowerRow(
+                L.T("notch.power.restart"),
+                L.T("notch.power.restart_confirm"),
+                NotchIconKind.Reset,
+                NotchDesign.TextSecondaryBrush,
+                NotchDesign.TextPrimaryBrush,
+                NotchDesign.AccentPrimaryBrush,
+                () => PowerScheduleService.RunShutdownCommand("/r /t 0")));
+
+            stack.Children.Add(CreateConfirmablePowerRow(
+                L.T("notch.power.shutdown"),
+                L.T("notch.power.shutdown_confirm"),
+                NotchIconKind.Power,
+                redBrush,
+                redBrush,
+                redBrush,
+                () => PowerScheduleService.RunShutdownCommand("/s /t 0"),
+                marginBottom: 0));
             return stack;
         }
 
@@ -765,7 +765,8 @@ namespace WindowsNotch.UI
             Brush iconBrush,
             Brush textBrush,
             Brush confirmAccentBrush,
-            Action onConfirm)
+            Action onConfirm,
+            double marginBottom = 6)
         {
             var idleBg = NotchDesign.CardBackgroundBrush;
             var hoverBg = NotchDesign.ControlHoverBrush;
@@ -786,7 +787,7 @@ namespace WindowsNotch.UI
                 BorderThickness = new Thickness(1),
                 CornerRadius = new CornerRadius(NotchDesign.RadiusControl),
                 Padding = new Thickness(11, 8, 11, 8),
-                Margin = new Thickness(0, 0, 0, 6),
+                Margin = new Thickness(0, 0, 0, marginBottom),
                 Cursor = Cursors.Hand,
                 RenderTransformOrigin = new Point(0.5, 0.5),
                 RenderTransform = scale

@@ -49,8 +49,6 @@ namespace WindowsNotch.Modules.Widgets
         private string _lyricsLastTrackKey = string.Empty;
         private double _lyricsLastProgress = -1.0;
         private bool _lyricsForceLayoutSync = true;
-        private Point? _lyricsLastTileOffset;
-        private bool _isUnpinAnimating;
         private Button? _lyricsOptInBtn;
 
         private static readonly Brush LyricsDimLineBrush = CreateFrozenBrush(Color.FromArgb(0x42, 0xFF, 0xFF, 0xFF));
@@ -422,18 +420,6 @@ namespace WindowsNotch.Modules.Widgets
                 return;
             }
 
-            if (!pinned && _isLyricsPinned && NotchDesign.EffectiveAnimationsEnabled &&
-                _lyricsFullscreenHost.Visibility == Visibility.Visible && !_isUnpinAnimating)
-            {
-                _isUnpinAnimating = true;
-                AnimateTileUnpinOut(_lyricsLastTileOffset, () =>
-                {
-                    _isUnpinAnimating = false;
-                    CompleteSetLyricsPinned(false, null);
-                });
-                return;
-            }
-
             Point? tileOffsetFromCenter = null;
             if (pinned && _expandedRootHost != null && _bentoGrid.Visibility == Visibility.Visible &&
                 _lyricsTileCard.ActualWidth > 10 && _expandedRootHost.ActualWidth > 10)
@@ -446,7 +432,6 @@ namespace WindowsNotch.Modules.Widgets
                     double hostCenterX = _expandedRootHost.ActualWidth * 0.5;
                     double hostCenterY = _expandedRootHost.ActualHeight * 0.5;
                     tileOffsetFromCenter = new Point(tileCenterX - hostCenterX, tileCenterY - hostCenterY);
-                    _lyricsLastTileOffset = tileOffsetFromCenter;
                 }
                 catch { }
             }
@@ -465,7 +450,25 @@ namespace WindowsNotch.Modules.Widgets
                 if (_bentoGrid.Children.Contains(_lyricsTileCard))
                     _bentoGrid.Children.Remove(_lyricsTileCard);
 
-                _bentoGrid.Visibility = Visibility.Collapsed;
+                if (NotchDesign.EffectiveAnimationsEnabled)
+                {
+                    _bentoGrid.IsHitTestVisible = false;
+                    var fadeBento = new DoubleAnimation(1.0, 0.0, TimeSpan.FromMilliseconds(180))
+                    {
+                        EasingFunction = NotchDesign.CreateEaseOut()
+                    };
+                    fadeBento.Completed += (_, _) =>
+                    {
+                        if (_isLyricsPinned && _bentoGrid != null)
+                            _bentoGrid.Visibility = Visibility.Collapsed;
+                    };
+                    _bentoGrid.BeginAnimation(UIElement.OpacityProperty, fadeBento);
+                }
+                else
+                {
+                    _bentoGrid.Visibility = Visibility.Collapsed;
+                }
+
                 _lyricsFullscreenHost.Padding = new Thickness(22, 12, 22, 20);
                 _lyricsFullscreenHost.Child = _lyricsTileCard;
                 _lyricsFullscreenHost.Visibility = Visibility.Visible;
@@ -478,6 +481,10 @@ namespace WindowsNotch.Modules.Widgets
                 _lyricsFullscreenHost.Child = null;
                 _lyricsFullscreenHost.Padding = new Thickness(0);
                 _lyricsFullscreenHost.Visibility = Visibility.Collapsed;
+
+                _bentoGrid.BeginAnimation(UIElement.OpacityProperty, null);
+                _bentoGrid.Opacity = 1.0;
+                _bentoGrid.IsHitTestVisible = true;
 
                 int idx = SettingsService.Current.BentoTileOrder.IndexOf("lyrics");
                 if (idx < 0) idx = 0;
@@ -651,39 +658,6 @@ namespace WindowsNotch.Modules.Widgets
                 });
         }
 
-        private void AnimateTileUnpinOut(Point? lastTileOffset, Action onCompleted)
-        {
-            if (_lyricsFullscreenHost == null)
-            {
-                onCompleted();
-                return;
-            }
-
-            double targetX = lastTileOffset?.X ?? 0.0;
-            double targetY = lastTileOffset?.Y ?? 24.0;
-
-            var scale = new ScaleTransform(1.0, 1.0);
-            var translate = new TranslateTransform(0.0, 0.0);
-            var tg = new TransformGroup();
-            tg.Children.Add(scale);
-            tg.Children.Add(translate);
-
-            _lyricsFullscreenHost.RenderTransformOrigin = new Point(0.5, 0.5);
-            _lyricsFullscreenHost.RenderTransform = tg;
-
-            var dur = TimeSpan.FromMilliseconds(240);
-            var ease = NotchDesign.CreateEaseInOut();
-
-            var opAnim = new DoubleAnimation(1.0, 0.0, dur) { EasingFunction = ease };
-            opAnim.Completed += (_, _) => onCompleted();
-
-            _lyricsFullscreenHost.BeginAnimation(UIElement.OpacityProperty, opAnim);
-            scale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(1.0, 0.50, dur) { EasingFunction = ease });
-            scale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(1.0, 0.50, dur) { EasingFunction = ease });
-            translate.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(0.0, targetX, dur) { EasingFunction = ease });
-            translate.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation(0.0, targetY, dur) { EasingFunction = ease });
-        }
-
         private void AnimateLyricsPinTransition(bool pinned, Point? startOffset = null)
         {
             if (!NotchDesign.EffectiveAnimationsEnabled) return;
@@ -695,10 +669,10 @@ namespace WindowsNotch.Modules.Widgets
 
             if (pinned)
             {
-                double startX = (startOffset?.X ?? 0.0) * 0.85;
-                double startY = (startOffset?.Y ?? 24.0) * 0.85;
+                double startX = (startOffset?.X ?? 0.0) * 0.72;
+                double startY = (startOffset?.Y ?? 18.0) * 0.72;
 
-                var scale = new ScaleTransform(0.50, 0.50);
+                var scale = new ScaleTransform(0.68, 0.68);
                 var translate = new TranslateTransform(startX, startY);
                 var tg = new TransformGroup();
                 tg.Children.Add(scale);
@@ -706,12 +680,12 @@ namespace WindowsNotch.Modules.Widgets
 
                 target.RenderTransformOrigin = new Point(0.5, 0.5);
                 target.RenderTransform = tg;
-                target.Opacity = 0.65;
+                target.Opacity = 0.78;
 
-                var totalDur = TimeSpan.FromMilliseconds(560);
-                var centerDur = TimeSpan.FromMilliseconds(420);
+                var totalDur = TimeSpan.FromMilliseconds(NotchDesign.TabSwitchDurationMs);
+                var centerDur = TimeSpan.FromMilliseconds(Math.Max(220, (int)Math.Round(NotchDesign.TabSwitchDurationMs * 0.80)));
 
-                var opacityAnim = new DoubleAnimation(0.65, 1.0, TimeSpan.FromMilliseconds(320))
+                var opacityAnim = new DoubleAnimation(0.78, 1.0, TimeSpan.FromMilliseconds(220))
                 {
                     EasingFunction = NotchDesign.CreateEaseOut()
                 };
@@ -723,13 +697,11 @@ namespace WindowsNotch.Modules.Widgets
                 };
                 translate.BeginAnimation(TranslateTransform.XProperty, xAnim);
 
-                // Wenn Kachel oben war (startY < 0): leichter Bogen nach unten (+8 px) und hoch zur Mitte;
-                // wenn Kachel unten war (startY >= 0): direkt & sauber von unten nach oben in die Mitte
                 if (startY < -8.0)
                 {
                     var yAnim = new DoubleAnimationUsingKeyFrames();
                     yAnim.KeyFrames.Add(new DiscreteDoubleKeyFrame(startY, KeyTime.FromTimeSpan(TimeSpan.Zero)));
-                    yAnim.KeyFrames.Add(new SplineDoubleKeyFrame(8.0, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(180)), new KeySpline(0.25, 0.1, 0.25, 1.0)));
+                    yAnim.KeyFrames.Add(new SplineDoubleKeyFrame(6.0, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(140)), new KeySpline(0.25, 0.1, 0.25, 1.0)));
                     yAnim.KeyFrames.Add(new SplineDoubleKeyFrame(0.0, KeyTime.FromTimeSpan(totalDur), new KeySpline(0.16, 1.0, 0.3, 1.0)));
                     translate.BeginAnimation(TranslateTransform.YProperty, yAnim);
                 }
@@ -740,23 +712,23 @@ namespace WindowsNotch.Modules.Widgets
                         new DoubleAnimation(startY, 0.0, centerDur) { EasingFunction = NotchDesign.CreateEaseOut() });
                 }
 
-                var scaleEase = NotchDesign.CreateSpringEase(0.36);
-                var scaleAnim = new DoubleAnimation(0.50, 1.0, totalDur) { EasingFunction = scaleEase };
+                var scaleEase = NotchDesign.CreateSpringEase(0.34);
+                var scaleAnim = new DoubleAnimation(0.68, 1.0, totalDur) { EasingFunction = scaleEase };
                 scale.BeginAnimation(ScaleTransform.ScaleXProperty, scaleAnim);
                 scale.BeginAnimation(ScaleTransform.ScaleYProperty, scaleAnim);
                 return;
             }
 
-            var unpinScale = new ScaleTransform(0.96, 0.96);
+            var unpinScale = new ScaleTransform(0.94, 0.94);
             target.RenderTransformOrigin = new Point(0.5, 0.5);
             target.RenderTransform = unpinScale;
             target.Opacity = 0.55;
 
-            var dur = TimeSpan.FromMilliseconds(260);
+            var dur = TimeSpan.FromMilliseconds(NotchDesign.MicroTransitionMs);
             var ease = NotchDesign.CreateEaseOut();
             target.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(0.55, 1.0, dur) { EasingFunction = ease });
-            unpinScale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(0.96, 1.0, dur) { EasingFunction = ease });
-            unpinScale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(0.96, 1.0, dur) { EasingFunction = ease });
+            unpinScale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(0.94, 1.0, dur) { EasingFunction = ease });
+            unpinScale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(0.94, 1.0, dur) { EasingFunction = ease });
         }
 
         private void UpdateLyricsTile()

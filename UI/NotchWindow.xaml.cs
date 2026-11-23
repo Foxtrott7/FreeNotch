@@ -493,11 +493,11 @@ namespace WindowsNotch.UI
             int previewFadeMs = showPreview ? NotchDesign.MicroTransitionMs : Math.Min(160, NotchDesign.MicroTransitionMs);
             int expandedFadeMs = opening
                 ? NotchDesign.MicroTransitionMs
-                : Math.Max(130, (int)Math.Round(NotchDesign.CollapseDurationMs * 0.52));
+                : Math.Max(180, (int)Math.Round(NotchDesign.CollapseDurationMs * 0.88));
             var previewEase = opening ? NotchDesign.CreateEaseOut() : NotchDesign.CreateEaseInOut();
             var expandedEase = opening
                 ? NotchDesign.CreateEaseOut()
-                : new CubicEase { EasingMode = EasingMode.EaseIn };
+                : NotchDesign.CreateEaseInOut();
             PreviewHost.IsHitTestVisible = target != NotchState.Expanded;
             SetOpacity(PreviewHost, showPreview ? 1 : 0, 0, animate: true, activeTransition: true, durationMs: previewFadeMs, ease: previewEase);
             SetOpacity(ExpandedPanel, target == NotchState.Expanded ? 1 : 0,
@@ -966,7 +966,7 @@ namespace WindowsNotch.UI
                     if (NotchDesign.EffectiveAnimationsEnabled)
                     {
                         var ease = NotchDesign.CreateSpringEase(NotchDesign.TabSwitchAmplitude);
-                        var dur = TimeSpan.FromMilliseconds(NotchDesign.SpringOpenDurationMs);
+                        var dur = TimeSpan.FromMilliseconds(NotchDesign.TabSwitchDurationMs);
                         NotchBorder.BeginAnimation(WidthProperty, CreateAnim(w, dur, ease));
                         NotchBorder.BeginAnimation(HeightProperty, CreateAnim(h, dur, ease));
                     }

@@ -59,6 +59,7 @@ namespace WindowsNotch.Services
         private DateTimeOffset _pendingFirstSeenUtc = DateTimeOffset.MinValue;
         private bool? _pendingToggleTarget;
         private DateTimeOffset _pendingToggleExpiresUtc = DateTimeOffset.MinValue;
+        private Timer? _playingWatchTimer;
 
         private TimeSpan _timelineStart;
 
@@ -289,6 +290,57 @@ namespace WindowsNotch.Services
             }
         }
 
+        private bool HasAnyPlayingSession()
+        {
+            try
+            {
+                var current = _manager?.GetCurrentSession();
+                if (current != null && IsSessionPlaying(current))
+                    return true;
+            }
+            catch { }
+
+            List<GlobalSystemMediaTransportControlsSession> snapshot;
+            lock (_gate)
+            {
+                snapshot = new List<GlobalSystemMediaTransportControlsSession>(_trackedSessions);
+            }
+            for (int i = 0; i < snapshot.Count; i++)
+            {
+                if (IsSessionPlaying(snapshot[i]))
+                    return true;
+            }
+            return false;
+        }
+
+        private void UpdatePlayingWatchTimer(bool isPlaying)
+        {
+            if (isPlaying)
+            {
+                _playingWatchTimer ??= new Timer(_ => OnPlayingWatchTick(), null, 1200, 1200);
+                try { _playingWatchTimer.Change(1200, 1200); } catch { }
+            }
+            else if (_playingWatchTimer != null)
+            {
+                try { _playingWatchTimer.Change(Timeout.Infinite, Timeout.Infinite); } catch { }
+            }
+        }
+
+        private void OnPlayingWatchTick()
+        {
+            if (!IsPlaying)
+            {
+                UpdatePlayingWatchTimer(false);
+                return;
+            }
+            if (_pendingToggleTarget != null && DateTimeOffset.UtcNow < _pendingToggleExpiresUtc)
+                return;
+
+            SyncTrackedSessions();
+            if (!HasAnyPlayingSession())
+                _ = RefreshAsync();
+        }
+
         private GlobalSystemMediaTransportControlsSession? SelectCandidateSession(
             out GlobalSystemMediaTransportControlsSession? fallbackSession)
         {
@@ -490,6 +542,24 @@ namespace WindowsNotch.Services
                                 && (!Equals(fallbackSession, _activeSession) || IsPlaying))
                             {
                                 await CommitSessionAsync(version, fallbackSession, null);
+                                return;
+                            }
+
+                            // Wenn aktuell nichts mehr spielt, darf IsPlaying nicht auf true hängen bleiben.
+                            if (IsPlaying && !HasAnyPlayingSession())
+                            {
+                                var disp = Application.Current?.Dispatcher;
+                                if (disp != null)
+                                {
+                                    await disp.InvokeAsync(() =>
+                                    {
+                                        if (version != _refreshVersion || !IsPlaying) return;
+                                        IsPlaying = false;
+                                        TimelineUpdatedAtUtc = DateTimeOffset.UtcNow;
+                                        UpdatePlayingWatchTimer(false);
+                                        StateChanged?.Invoke();
+                                    });
+                                }
                             }
                             return;
                         }
@@ -663,6 +733,7 @@ namespace WindowsNotch.Services
                 }
 
                 IsPlaying = playing;
+                UpdatePlayingWatchTimer(playing);
                 TrackTitle = title;
                 Artist = artist;
                 AlbumTitle = album;
