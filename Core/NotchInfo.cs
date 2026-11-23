@@ -21,6 +21,7 @@ namespace WindowsNotch.Core
         public const string Ram = "ram";
         public const string Gpu = "gpu";
         public const string Media = "media";
+        public const string PetEyes = "pet_eyes";
 
         /// <summary>Reihenfolge = Reihenfolge innerhalb eines Platzes.</summary>
         public static readonly IReadOnlyList<NotchInfoDef> All = new NotchInfoDef[]
@@ -32,6 +33,7 @@ namespace WindowsNotch.Core
             new(Ram, "RAM", NotchIconKind.Memory),
             new(Gpu, "GPU", NotchIconKind.Gpu),
             new(Media, "Medientitel", NotchIconKind.Music),
+            new(PetEyes, "Notch-Augen", NotchIconKind.Pet),
         };
 
         public static Dictionary<string, NotchSlot> DefaultCollapsed() => new() { [Clock] = NotchSlot.Center };

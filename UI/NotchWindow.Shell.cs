@@ -35,7 +35,7 @@ namespace WindowsNotch.UI
                     return (SettingsWidth + earX, SettingsHeight + earY);
 
                 if (_isPowerMenuOpen)
-                    return (PowerMenuWidth + earX, PowerMenuHeight + earY);
+                    return (PowerMenuWidth + earX, CurrentPowerMenuHeight + earY);
 
                 double tourExtraH = _isTourActive ? 68 : 0;
                 double tourMinW = _isTourActive ? 470 : 0;

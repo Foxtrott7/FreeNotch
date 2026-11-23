@@ -25,7 +25,6 @@ namespace WindowsNotch.UI
         private const double SettingsWidth = 640;
         private const double SettingsHeight = 440;
         private const double PowerMenuWidth = 300;
-        private const double PowerMenuHeight = 236;
 
         private readonly ModuleHost _moduleHost;
         private NotchState _state = NotchState.Collapsed;
@@ -51,7 +50,7 @@ namespace WindowsNotch.UI
         private DispatcherTimer? _tourDemoTimer;
         private OnboardingTourBar? _tourBar;
         private const double OnboardingWidth = 600;
-        private const double OnboardingHeight = 395;
+        private const double OnboardingHeight = 445;
         private double _lastCollapsedW = double.NaN;
         private double _lastCollapsedH = double.NaN;
         private bool? _lastCollapsedHasLive;
@@ -396,7 +395,6 @@ namespace WindowsNotch.UI
 
             SetOpacity(PreviewHost, showPreview ? 1 : 0, 0, animate: false);
             PreviewHost.IsHitTestVisible = _state != NotchState.Expanded;
-            UpdatePetOverlay();
             SetOpacity(ExpandedPanel, _state == NotchState.Expanded ? 1 : 0, 0, animate: false);
             ExpandedPanel.Visibility = _state == NotchState.Expanded ? Visibility.Visible : Visibility.Collapsed;
             ExpandedScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
@@ -451,7 +449,6 @@ namespace WindowsNotch.UI
                 BuildTabs();
             }
 
-            UpdatePetOverlay();
             UpdatePrivacyIndicator();
 
             if (!NotchDesign.EffectiveAnimationsEnabled)
@@ -620,28 +617,9 @@ namespace WindowsNotch.UI
             }
         }
 
-        private void UpdatePetOverlay()
-        {
-            var pet = _moduleHost.ActiveModules.OfType<WindowsNotch.Modules.Pet.PetModule>().FirstOrDefault();
-            bool show = _state == NotchState.Collapsed && !IsSideEdge && pet != null && pet.ShowInIdleNotch;
-
-            if (show && pet != null)
-            {
-                PetOverlayHost.Content ??= pet.CreateIdleOverlayView();
-                PetOverlayHost.Visibility = Visibility.Visible;
-            }
-            else
-            {
-                PetOverlayHost.Visibility = Visibility.Collapsed;
-                PetOverlayHost.Content = null;
-            }
-        }
-
         private void RefreshCollapsedLiveState()
         {
             if (_state != NotchState.Collapsed) return;
-
-            UpdatePetOverlay();
 
             bool hasLive = UpdateCollapsedLiveContent();
             var (w, h) = SizeFor(NotchState.Collapsed);
@@ -970,7 +948,6 @@ namespace WindowsNotch.UI
             }
 
             UpdatePrivacyIndicator();
-            UpdatePetOverlay();
 
             if (_state == NotchState.Preview)
             {
@@ -1008,6 +985,7 @@ namespace WindowsNotch.UI
         private void Notch_MouseEnter(object sender, MouseEventArgs e)
         {
             if (_suppressed) return;
+            Modules.Pet.PetService.Instance.SetHoveringNotch(true);
             _fileTrayAutoCloseTimer.Stop();
             if (S.Mode == InteractionMode.ClickOnly) return;
             if (_state != NotchState.Collapsed) return;
@@ -1036,6 +1014,7 @@ namespace WindowsNotch.UI
         private void Notch_MouseLeave(object sender, MouseEventArgs e)
         {
             if (Mouse.Captured != null) return;
+            Modules.Pet.PetService.Instance.SetHoveringNotch(false);
             _hoverTimer.Stop();
 
             if (_state == NotchState.Preview)

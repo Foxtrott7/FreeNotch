@@ -415,6 +415,8 @@ namespace WindowsNotch.Modules.Widgets
 
         private void SetLyricsPinned(bool pinned)
         {
+            if (pinned && _isPetPinned)
+                SetPetPinned(false);
             _jiggleController?.CancelPendingPress();
             if (_bentoGrid == null || _lyricsTileCard == null || _lyricsFullscreenHost == null)
             {
@@ -426,7 +428,7 @@ namespace WindowsNotch.Modules.Widgets
                 _lyricsFullscreenHost.Visibility == Visibility.Visible && !_isUnpinAnimating)
             {
                 _isUnpinAnimating = true;
-                AnimateLyricsUnpinOut(() =>
+                AnimateTileUnpinOut(_lyricsLastTileOffset, () =>
                 {
                     _isUnpinAnimating = false;
                     CompleteSetLyricsPinned(false, null);
@@ -651,7 +653,7 @@ namespace WindowsNotch.Modules.Widgets
                 });
         }
 
-        private void AnimateLyricsUnpinOut(Action onCompleted)
+        private void AnimateTileUnpinOut(Point? lastTileOffset, Action onCompleted)
         {
             if (_lyricsFullscreenHost == null)
             {
@@ -659,8 +661,8 @@ namespace WindowsNotch.Modules.Widgets
                 return;
             }
 
-            double targetX = _lyricsLastTileOffset?.X ?? 0.0;
-            double targetY = _lyricsLastTileOffset?.Y ?? 24.0;
+            double targetX = lastTileOffset?.X ?? 0.0;
+            double targetY = lastTileOffset?.Y ?? 24.0;
 
             var scale = new ScaleTransform(1.0, 1.0);
             var translate = new TranslateTransform(0.0, 0.0);

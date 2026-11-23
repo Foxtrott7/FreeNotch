@@ -89,7 +89,7 @@ namespace WindowsNotch.Core
         {
             "lyrics", "media", "weather", "calendar",
             "todos", "notes", "clock", "timer",
-            "stopwatch", "hardware", "finance", "carousel"
+            "stopwatch", "hardware", "finance", "pet", "carousel"
         };
         public static readonly string[] DefaultFinanceFavorites = { "BTC-USD", "ETH-USD", "AAPL", "NVDA" };
         public static readonly string[] DefaultQuickActionTileOrder = { "lock", "project", "song", "taskmgr", "explorer", "audio" };
@@ -140,6 +140,16 @@ namespace WindowsNotch.Core
         public List<string>? FinanceFavorites { get; set; }
         public int FinanceActiveIndex { get; set; }
         public string FinanceRange { get; set; } = "1D";
+
+        // Notch-Pet / Tamagotchi (unabhängig von NotchInfo.PetEyes im Ruhezustand)
+        public bool PetTamagotchiEnabled { get; set; }
+        public int PetLevel { get; set; } = 1;
+        public int PetXp { get; set; }
+        public int PetHunger { get; set; } = 85;
+        public int PetEnergy { get; set; } = 90;
+        public int PetMoodScore { get; set; } = 85;
+        public bool PetSleeping { get; set; }
+        public DateTime PetLastUpdatedUtc { get; set; } = DateTime.UtcNow;
 
         public static List<string> ParseWeatherCities(string? input)
         {
@@ -356,6 +366,40 @@ namespace WindowsNotch.Core
                 AccentThemeId = "indigo-violet";
             CustomAccentStartHex = NotchDesign.NormalizeHex(CustomAccentStartHex, "#2822A8");
             CustomAccentEndHex = NotchDesign.NormalizeHex(CustomAccentEndHex, "#9333EA");
+
+            PetLevel = Math.Max(1, PetLevel);
+            PetXp = Math.Max(0, PetXp);
+            PetHunger = Math.Clamp(PetHunger, 0, 100);
+            PetEnergy = Math.Clamp(PetEnergy, 0, 100);
+            PetMoodScore = Math.Clamp(PetMoodScore, 0, 100);
+            if (PetLastUpdatedUtc == default)
+                PetLastUpdatedUtc = DateTime.UtcNow;
+        }
+
+        public static void SetBentoPetTileEnabled(AppSettings settings, bool enabled)
+        {
+            settings.PetTamagotchiEnabled = enabled;
+            var order = (settings.BentoTileOrder ?? new List<string>()).ToList();
+            while (order.Count < 4) order.Add(string.Empty);
+
+            if (enabled)
+            {
+                if (!order.Contains("pet"))
+                {
+                    int emptyIdx = order.FindIndex(string.IsNullOrWhiteSpace);
+                    order[emptyIdx >= 0 ? emptyIdx : 3] = "pet";
+                }
+            }
+            else
+            {
+                for (int i = 0; i < order.Count; i++)
+                {
+                    if (order[i] == "pet")
+                        order[i] = i == 3 && !order.Contains("clock") ? "clock" : string.Empty;
+                }
+            }
+
+            settings.BentoTileOrder = order;
         }
 
         public static List<string> NormalizeQuickTileSlots(List<string>? raw)

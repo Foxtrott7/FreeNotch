@@ -225,14 +225,6 @@
 
             <!-- Geclippter Inhaltsbereich innerhalb der Notch-Silhouette -->
             <Grid x:Name="NotchContentHost" ClipToBounds="True">
-                <!-- Maskottchen-Overlay im eingeklappten Ruhezustand (neben Uhrzeit/Inhalt) -->
-                <ContentControl x:Name="PetOverlayHost"
-                                HorizontalAlignment="Stretch"
-                                VerticalAlignment="Stretch"
-                                Margin="14,0,14,0"
-                                IsHitTestVisible="False"
-                                Visibility="Collapsed" />
-
                 <!-- Kapsel-Vorschau im Hover-Zustand & Live-Activity -->
                 <ContentControl x:Name="PreviewHost"
                                 HorizontalAlignment="Center"

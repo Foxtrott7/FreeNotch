@@ -131,5 +131,37 @@ namespace WindowsNotch.Tests
                 Assert.Equal(NotchTheme.Dark, settings.Theme);
             }
         }
+
+        [Fact]
+        public void PetSettings_NormalizeAndToggleBentoTile_WorkIndependentlyOfNotchEyes()
+        {
+            var settings = new AppSettings
+            {
+                PetLevel = 0,
+                PetXp = -10,
+                PetHunger = 150,
+                PetEnergy = -5,
+                PetMoodScore = 200
+            };
+            settings.CollapsedLayout[NotchInfo.PetEyes] = NotchSlot.Center;
+            settings.Normalize();
+
+            Assert.Equal(1, settings.PetLevel);
+            Assert.Equal(0, settings.PetXp);
+            Assert.Equal(100, settings.PetHunger);
+            Assert.Equal(0, settings.PetEnergy);
+            Assert.Equal(100, settings.PetMoodScore);
+            Assert.Equal(NotchSlot.Center, settings.CollapsedLayout[NotchInfo.PetEyes]);
+            Assert.False(settings.PetTamagotchiEnabled);
+
+            AppSettings.SetBentoPetTileEnabled(settings, true);
+            Assert.True(settings.PetTamagotchiEnabled);
+            Assert.Contains("pet", settings.BentoTileOrder);
+
+            AppSettings.SetBentoPetTileEnabled(settings, false);
+            Assert.False(settings.PetTamagotchiEnabled);
+            Assert.DoesNotContain("pet", settings.BentoTileOrder);
+            Assert.Equal(NotchSlot.Center, settings.CollapsedLayout[NotchInfo.PetEyes]);
+        }
     }
 }

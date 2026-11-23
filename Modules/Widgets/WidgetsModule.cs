@@ -49,10 +49,10 @@ namespace WindowsNotch.Modules.Widgets
 
         public override double? PreferredPreviewWidth => 280;
         public override (double Width, double Height)? PreferredExpandedSize
-            => _isLyricsPinned
+            => (_isLyricsPinned || _isPetPinned)
                 ? (480, 314)
                 : (540, 340 + (_showStoreDrawer ? EstimateStoreDrawerHeight() : 0));
-        public override bool KeepExpanded => _isLyricsPinned;
+        public override bool KeepExpanded => _isLyricsPinned || _isPetPinned;
 
         public override double? PreferredLiveWidth
         {
@@ -195,6 +195,11 @@ namespace WindowsNotch.Modules.Widgets
             if (_isLyricsPinned)
             {
                 SetLyricsPinned(false);
+                return true;
+            }
+            if (_isPetPinned)
+            {
+                SetPetPinned(false);
                 return true;
             }
             return _jiggleController?.HandleEscape() ?? false;
@@ -403,6 +408,8 @@ namespace WindowsNotch.Modules.Widgets
             _lyricsLastProgress = -1.0;
             _lyricsForceLayoutSync = true;
             _lyricsGlyphTokens.Clear();
+            _lyricsTileCard = null;
+            _petTileCard = null;
 
             var rootHost = new Grid();
             _expandedRootHost = rootHost;
@@ -533,7 +540,15 @@ namespace WindowsNotch.Modules.Widgets
             RebuildCalendarDays();
             UpdateExpandedWidgets();
             if (_isLyricsPinned)
-                SetLyricsPinned(true);
+            {
+                if (_lyricsTileCard != null) SetLyricsPinned(true);
+                else _isLyricsPinned = false;
+            }
+            if (_isPetPinned)
+            {
+                if (_petTileCard != null) SetPetPinned(true);
+                else _isPetPinned = false;
+            }
 
             var localJiggle = _jiggleController;
             rootHost.Loaded += (_, _) =>
@@ -570,6 +585,7 @@ namespace WindowsNotch.Modules.Widgets
             "stopwatch" => BuildStopwatchTile(),
             "hardware" => BuildHardwareTile(),
             "finance" => BuildFinanceTile(),
+            "pet" => BuildPetTile(),
             "carousel" => BuildCustomCarouselTile(),
             "" => BuildEmptySlotTile(),
             _ => BuildCustomCarouselTile()
