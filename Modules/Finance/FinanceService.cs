@@ -302,17 +302,18 @@ namespace WindowsNotch.Modules.Finance
 
             try
             {
-                var (yahooRange, yahooInterval) = normRange switch
+                var (yahooRange, yahooInterval, includePrePost, windowSeconds) = normRange switch
                 {
-                    "1W" => ("5d", "30m"),
-                    "1M" => ("1mo", "1d"),
-                    "1Y" => ("1y", "1d"),
-                    "5Y" => ("5y", "1wk"),
-                    "ALL" => ("max", "1mo"),
-                    _ => ("1d", "5m")
+                    "1W" => ("1mo", "30m", false, 7L * 86400L),
+                    "1M" => ("1mo", "1d", false, 0L),
+                    "1Y" => ("1y", "1d", false, 0L),
+                    "5Y" => ("5y", "1wk", false, 0L),
+                    "ALL" => ("max", "1mo", false, 0L),
+                    _ => ("5d", "5m", true, 86400L) // 1D: volle letzte 24h (inkl. Pre/Post-Market & Krypto 24/7)
                 };
 
-                string url = $"https://query1.finance.yahoo.com/v8/finance/chart/{Uri.EscapeDataString(norm)}?range={yahooRange}&interval={yahooInterval}&includePrePost=false";
+                string prePostParam = includePrePost ? "true" : "false";
+                string url = $"https://query1.finance.yahoo.com/v8/finance/chart/{Uri.EscapeDataString(norm)}?range={yahooRange}&interval={yahooInterval}&includePrePost={prePostParam}";
                 using var resp = await Http.GetAsync(url, ct);
                 resp.EnsureSuccessStatusCode();
 
@@ -332,7 +333,9 @@ namespace WindowsNotch.Modules.Finance
 
                 double price = TryGetDouble(meta, "regularMarketPrice");
                 double prevClose = TryGetDouble(meta, "previousClose");
-                if (prevClose <= 0 && normRange == "1D")
+                if (prevClose <= 0)
+                    prevClose = TryGetDouble(meta, "regularMarketPreviousClose");
+                if (prevClose <= 0 && normRange == "1D" && yahooRange == "1d")
                     prevClose = TryGetDouble(meta, "chartPreviousClose");
 
                 string currency = meta.TryGetProperty("currency", out var curEl) && curEl.ValueKind == JsonValueKind.String
@@ -351,6 +354,7 @@ namespace WindowsNotch.Modules.Finance
                 bool isCrypto = IsCryptoSymbol(norm) || string.Equals(instType, "CRYPTOCURRENCY", StringComparison.OrdinalIgnoreCase);
 
                 var spark = new List<double>();
+                var timedPoints = new List<(long Ts, double Close)>();
                 if (result.TryGetProperty("indicators", out var ind) &&
                     ind.TryGetProperty("quote", out var quotesArr) &&
                     quotesArr.ValueKind == JsonValueKind.Array &&
@@ -358,11 +362,38 @@ namespace WindowsNotch.Modules.Finance
                     quotesArr[0].TryGetProperty("close", out var closeArr) &&
                     closeArr.ValueKind == JsonValueKind.Array)
                 {
+                    bool hasTimestamps = result.TryGetProperty("timestamp", out var tsArr) &&
+                                         tsArr.ValueKind == JsonValueKind.Array;
+                    int idx = 0;
+                    using var tsEnum = hasTimestamps ? tsArr.EnumerateArray() : default;
                     foreach (var pt in closeArr.EnumerateArray())
                     {
+                        long ts = 0;
+                        if (hasTimestamps && tsEnum.MoveNext() && tsEnum.Current.ValueKind == JsonValueKind.Number)
+                            tsEnum.Current.TryGetInt64(out ts);
+
                         if (pt.ValueKind == JsonValueKind.Number && pt.TryGetDouble(out double v) && !double.IsNaN(v))
+                        {
                             spark.Add(v);
+                            if (ts > 0) timedPoints.Add((ts, v));
+                        }
+                        idx++;
                     }
+                }
+
+                if (windowSeconds > 0 && timedPoints.Count >= 2)
+                {
+                    long nowUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                    long cutoff = nowUnix - windowSeconds;
+                    var windowed = timedPoints.Where(p => p.Ts >= cutoff).Select(p => p.Close).ToList();
+                    if (windowed.Count < 2)
+                    {
+                        // Wochenende / Feiertag: letzte verfügbare 24h-/7T-Handelsspanne relativ zum letzten Punkt
+                        long latestCutoff = timedPoints[^1].Ts - windowSeconds;
+                        windowed = timedPoints.Where(p => p.Ts >= latestCutoff).Select(p => p.Close).ToList();
+                    }
+                    if (windowed.Count >= 2)
+                        spark = windowed;
                 }
 
                 var quote = _quotes.GetOrAdd(norm, _ => new FinanceQuote { Symbol = norm });

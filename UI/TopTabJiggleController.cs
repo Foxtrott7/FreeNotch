@@ -7,6 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Media.Effects;
 using System.Windows.Threading;
 using WindowsNotch.Core;
 
@@ -20,7 +21,7 @@ namespace WindowsNotch.UI
     {
         private const int LongPressMs = 450;
         private const double MoveCancelThreshold = 6.0;
-        private const double DragFollowRate = 26.0;
+        private const double DragFollowRate = 22.0;
         private const double SwapCooldownMs = 140.0;
 
         private sealed class TabEntry
@@ -289,12 +290,20 @@ namespace WindowsNotch.UI
             entry.DragTranslate.BeginAnimation(TranslateTransform.YProperty, null);
             PauseTabJiggle(entry);
 
-            Panel.SetZIndex(entry.Button, 100);
-            entry.Button.Opacity = 0.92;
+            Panel.SetZIndex(entry.Button, 150);
+            entry.Button.Opacity = 0.94;
+            entry.Button.Effect = new DropShadowEffect
+            {
+                Color = Colors.Black,
+                BlurRadius = 10,
+                ShadowDepth = 3,
+                Direction = 270,
+                Opacity = 0.55
+            };
 
             if (_animationsEnabled())
             {
-                var scaleAnim = new DoubleAnimation(1.12, TimeSpan.FromMilliseconds(140))
+                var scaleAnim = new DoubleAnimation(1.14, TimeSpan.FromMilliseconds(180))
                 {
                     EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
                 };
@@ -304,8 +313,8 @@ namespace WindowsNotch.UI
             }
             else
             {
-                entry.DragScale.ScaleX = 1.12;
-                entry.DragScale.ScaleY = 1.12;
+                entry.DragScale.ScaleX = 1.14;
+                entry.DragScale.ScaleY = 1.14;
             }
 
             Mouse.Capture(_tabContainer, CaptureMode.SubTree);
@@ -332,6 +341,7 @@ namespace WindowsNotch.UI
             {
                 Panel.SetZIndex(entry.Button, 0);
                 entry.Button.Opacity = 1.0;
+                entry.Button.Effect = null;
 
                 if (_animationsEnabled())
                 {
@@ -511,7 +521,7 @@ namespace WindowsNotch.UI
                     entry.JiggleRotate,
                     entry.JiggleTranslate,
                     entry.DragScale,
-                    playCommitPulse: false,
+                    playCommitPulse: true,
                     animationsEnabled: _animationsEnabled(),
                     targetFps: _targetFrameRate());
             }

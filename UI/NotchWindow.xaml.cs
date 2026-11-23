@@ -780,6 +780,7 @@ namespace WindowsNotch.UI
             UpdateSettingsButtonState();
             UpdatePowerButtonState();
             UpdateKeepExpandedCloseButton();
+            ScrollSelectedTabIntoView();
         }
 
         private void OnTopTabOrderChanged(IReadOnlyList<string> orderedIds)
@@ -847,10 +848,17 @@ namespace WindowsNotch.UI
 
                     if (isSel && _isTourActive)
                         PulseTourTabButton(btn);
-                    else
-                        btn.RenderTransform = Transform.Identity;
+                    else if (btn.RenderTransform is TransformGroup tg && tg.Children.Count > 0 && tg.Children[0] is ScaleTransform st)
+                    {
+                        st.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+                        st.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+                        st.ScaleX = 1.0;
+                        st.ScaleY = 1.0;
+                    }
                 }
             }
+
+            ScrollSelectedTabIntoView();
 
             if (_isTourActive)
             {
@@ -1299,9 +1307,17 @@ namespace WindowsNotch.UI
         private static void PulseTourTabButton(Button btn)
         {
             if (!NotchDesign.EffectiveAnimationsEnabled) return;
-            var scale = new ScaleTransform(1.0, 1.0);
-            btn.RenderTransformOrigin = new Point(0.5, 0.5);
-            btn.RenderTransform = scale;
+            ScaleTransform scale;
+            if (btn.RenderTransform is TransformGroup tg && tg.Children.Count > 0 && tg.Children[0] is ScaleTransform existing)
+            {
+                scale = existing;
+            }
+            else
+            {
+                scale = new ScaleTransform(1.0, 1.0);
+                btn.RenderTransformOrigin = new Point(0.5, 0.5);
+                btn.RenderTransform = scale;
+            }
 
             var anim = new DoubleAnimation(1.0, 1.16, TimeSpan.FromMilliseconds(460))
             {
@@ -1311,6 +1327,52 @@ namespace WindowsNotch.UI
             };
             scale.BeginAnimation(ScaleTransform.ScaleXProperty, anim);
             scale.BeginAnimation(ScaleTransform.ScaleYProperty, anim);
+        }
+
+        private void TabScrollViewer_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            if (TabScrollViewer.ScrollableWidth <= 0) return;
+            double step = e.Delta != 0 ? -Math.Sign(e.Delta) * Math.Max(28.0, Math.Abs(e.Delta) * 0.45) : 0;
+            double target = Math.Clamp(TabScrollViewer.HorizontalOffset + step, 0, TabScrollViewer.ScrollableWidth);
+            TabScrollViewer.ScrollToHorizontalOffset(target);
+            e.Handled = true;
+        }
+
+        private void TabScrollViewer_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            if (e.WidthChanged)
+                ScrollSelectedTabIntoView();
+        }
+
+        private void ScrollSelectedTabIntoView()
+        {
+            if (_selectedModule == null || TabContainer.Children.Count == 0) return;
+            Dispatcher.BeginInvoke(DispatcherPriority.Loaded, () =>
+            {
+                Button? selectedBtn = null;
+                foreach (var child in TabContainer.Children)
+                {
+                    if (child is Button b && ReferenceEquals(b.DataContext, _selectedModule))
+                    {
+                        selectedBtn = b;
+                        break;
+                    }
+                }
+                if (selectedBtn == null || !selectedBtn.IsLoaded) return;
+                double viewportW = TabScrollViewer.ViewportWidth;
+                if (viewportW <= 0) return;
+
+                Point pos = selectedBtn.TranslatePoint(new Point(0, 0), TabContainer);
+                double left = pos.X;
+                double right = left + selectedBtn.ActualWidth;
+                double curOffset = TabScrollViewer.HorizontalOffset;
+                const double pad = 18.0;
+
+                if (left - pad < curOffset)
+                    TabScrollViewer.ScrollToHorizontalOffset(Math.Max(0, left - pad));
+                else if (right + pad > curOffset + viewportW)
+                    TabScrollViewer.ScrollToHorizontalOffset(Math.Min(TabScrollViewer.ScrollableWidth, right + pad - viewportW));
+            });
         }
 
         private void CloseSettings()

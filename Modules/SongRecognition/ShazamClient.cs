@@ -62,6 +62,10 @@ namespace WindowsNotch.Modules.SongRecognition
             string url = $"https://amp.shazam.com/discovery/v5/{lang}/android/-/tag/{Guid.NewGuid():D}/{Guid.NewGuid():D}" +
                          "?sync=true&webv3=true&sampling=true&connected=&shazamapiversion=v3&sharehub=true&hubv5minorversion=v5.1&hidelb=true&video=v3";
 
+            string ianaTimezone = TimeZoneInfo.TryConvertWindowsIdToIanaId(TimeZoneInfo.Local.Id, out string? iana)
+                ? iana
+                : "UTC";
+
             var payload = new
             {
                 geolocation = new { altitude = 300.0, latitude = 45.0, longitude = 2.0 },
@@ -72,7 +76,7 @@ namespace WindowsNotch.Modules.SongRecognition
                     uri = dataUri
                 },
                 timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-                timezone = TimeZoneInfo.Local.Id
+                timezone = ianaTimezone
             };
 
             using var req = new HttpRequestMessage(HttpMethod.Post, url)
@@ -84,7 +88,10 @@ namespace WindowsNotch.Modules.SongRecognition
 
             using var resp = await Http.SendAsync(req, ct).ConfigureAwait(false);
             if (!resp.IsSuccessStatusCode)
+            {
+                App.LogError(new HttpRequestException($"Shazam discovery HTTP {(int)resp.StatusCode} ({resp.ReasonPhrase})"));
                 return null;
+            }
 
             string json = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
             return ParseResponse(json);
@@ -203,27 +210,28 @@ namespace WindowsNotch.Modules.SongRecognition
             for (int b = 0; b < Bands.Length; b++)
                 bandPeaks[b] = new List<(int, double, double)>();
 
-            // Lokale Maxima in Zeit (±2 Frames) & Frequenz (±3 Bins) + parabolische Bin-Interpolation
-            for (int t = 12; t < numFrames - 4; t++)
+            // Lokale Maxima in Zeit (±6 Frames / ±48 ms) & Frequenz (±10 Bins / ±78 Hz) — mehrere Peaks pro Band erlaubt
+            const double minEnergy = 1.0 / 64.0;
+            for (int t = 12; t < numFrames - 6; t++)
             {
                 for (int bandIdx = 0; bandIdx < Bands.Length; bandIdx++)
                 {
                     var (minBin, maxBin) = Bands[bandIdx];
-                    double bestEnergy = 1.0 / 64.0;
-                    int bestBin = -1;
-
                     for (int bin = minBin; bin < maxBin; bin++)
                     {
                         double val = magSpectrogram[t][bin];
-                        if (val <= bestEnergy) continue;
+                        if (val <= minEnergy) continue;
 
                         bool isPeak = true;
-                        for (int dt = -2; dt <= 2 && isPeak; dt++)
+                        for (int dt = -6; dt <= 6 && isPeak; dt++)
                         {
-                            for (int db = -3; db <= 3; db++)
+                            double[] row = magSpectrogram[t + dt];
+                            int bStart = Math.Max(0, bin - 10);
+                            int bEnd = Math.Min(row.Length - 1, bin + 10);
+                            for (int b = bStart; b <= bEnd; b++)
                             {
-                                if (dt == 0 && db == 0) continue;
-                                if (magSpectrogram[t + dt][bin + db] > val)
+                                if (dt == 0 && b == bin) continue;
+                                if (row[b] >= val)
                                 {
                                     isPeak = false;
                                     break;
@@ -231,23 +239,16 @@ namespace WindowsNotch.Modules.SongRecognition
                             }
                         }
 
-                        if (isPeak)
-                        {
-                            bestEnergy = val;
-                            bestBin = bin;
-                        }
-                    }
+                        if (!isPeak) continue;
 
-                    if (bestBin > 0 && bestBin + 1 < FftSize / 2)
-                    {
-                        double y0 = Math.Log(Math.Max(1.0 / 64.0, magSpectrogram[t][bestBin - 1]));
-                        double y1 = Math.Log(Math.Max(1.0 / 64.0, magSpectrogram[t][bestBin]));
-                        double y2 = Math.Log(Math.Max(1.0 / 64.0, magSpectrogram[t][bestBin + 1]));
+                        double y0 = Math.Log(Math.Max(minEnergy, magSpectrogram[t][bin - 1]));
+                        double y1 = Math.Log(Math.Max(minEnergy, val));
+                        double y2 = Math.Log(Math.Max(minEnergy, magSpectrogram[t][bin + 1]));
                         double denom = y0 - 2.0 * y1 + y2;
                         double shift = Math.Abs(denom) > 1e-9 ? Math.Clamp(0.5 * (y0 - y2) / denom, -0.5, 0.5) : 0.0;
                         double shazamMag = y1 * 1477.3 + 6144.0;
                         if (shazamMag > 0)
-                            bandPeaks[bandIdx].Add((t, bestBin + shift, shazamMag));
+                            bandPeaks[bandIdx].Add((t, bin + shift, shazamMag));
                     }
                 }
             }

@@ -170,22 +170,31 @@ namespace WindowsNotch.Modules.SongRecognition
 
             for (int i = 0; i < outLen; i++)
             {
-                int frameIdx = Math.Min(totalFrames - 1, (int)(i * step));
-                int frameOffset = frameIdx * wfx.BlockAlign;
-                double sum = 0;
+                int startFrame = Math.Min(totalFrames - 1, (int)(i * step));
+                int endFrame = Math.Min(totalFrames, Math.Max(startFrame + 1, (int)((i + 1) * step)));
+                double totalMono = 0;
+                int frameCount = endFrame - startFrame;
 
-                for (int ch = 0; ch < wfx.Channels; ch++)
+                for (int frameIdx = startFrame; frameIdx < endFrame; frameIdx++)
                 {
-                    int sampleOffset = frameOffset + ch * bytesPerSample;
-                    if (sampleOffset + bytesPerSample > pcm.Length) break;
+                    int frameOffset = frameIdx * wfx.BlockAlign;
+                    double sum = 0;
 
-                    if (isFloat32)
-                        sum += BitConverter.ToSingle(pcm, sampleOffset);
-                    else
-                        sum += BitConverter.ToInt16(pcm, sampleOffset) / 32768.0;
+                    for (int ch = 0; ch < wfx.Channels; ch++)
+                    {
+                        int sampleOffset = frameOffset + ch * bytesPerSample;
+                        if (sampleOffset + bytesPerSample > pcm.Length) break;
+
+                        if (isFloat32)
+                            sum += BitConverter.ToSingle(pcm, sampleOffset);
+                        else
+                            sum += BitConverter.ToInt16(pcm, sampleOffset) / 32768.0;
+                    }
+
+                    totalMono += sum / wfx.Channels;
                 }
 
-                double mono = sum / wfx.Channels;
+                double mono = totalMono / frameCount;
                 output[i] = (short)Math.Clamp(mono * 32767.0, -32768.0, 32767.0);
             }
 
