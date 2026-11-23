@@ -29,12 +29,11 @@ namespace WindowsNotch.Core
             int size = Math.Max(32, Forms.SystemInformation.SmallIconSize.Width);
             float s = size / 32f;
 
-            Color badgeAccent = muted
-                ? Color.FromArgb(0xFF, 0x71, 0x71, 0x7A)
-                : Color.FromArgb(0xFF, accentColor.R, accentColor.G, accentColor.B);
-            Color fgColor = muted
-                ? Color.FromArgb(0xFF, 0xD4, 0xD4, 0xD8)
-                : Color.White;
+            // Einheitliches monochromes App-Badge (Weiß/Schwarz), im Mute-Zustand dezent abgedimmt
+            Color topBg = muted ? Color.FromArgb(0xFF, 0xE4, 0xE4, 0xE7) : Color.White;
+            Color bottomBg = muted ? Color.FromArgb(0xFF, 0xD4, 0xD4, 0xD8) : Color.FromArgb(0xFF, 0xF4, 0xF4, 0xF5);
+            Color borderColor = muted ? Color.FromArgb(0xFF, 0xA1, 0xA1, 0xAA) : Color.FromArgb(0xFF, 0xD4, 0xD4, 0xD8);
+            Color fgColor = muted ? Color.FromArgb(0xFF, 0x71, 0x71, 0x7A) : Color.FromArgb(0xFF, 0x0A, 0x0A, 0x0E);
 
             using var bmp = new Bitmap(size, size, PixelFormat.Format32bppArgb);
             using (var g = Graphics.FromImage(bmp))
@@ -44,26 +43,20 @@ namespace WindowsNotch.Core
                 g.CompositingQuality = CompositingQuality.HighQuality;
                 g.Clear(Color.Transparent);
 
-                // Abgerundetes OLED-App-Badge mit subtilem Akzent-Schimmer unten
+                // Abgerundetes weißes App-Badge mit dezentem Kontrast-Rand
                 var badgeRect = new RectangleF(2f * s, 2f * s, 28f * s, 28f * s);
                 using var badgePath = CreateRoundedRectPath(badgeRect, 7.5f * s);
-                Color topBg = Color.FromArgb(0xFF, 0x0A, 0x0A, 0x0E);
-                Color bottomBg = Color.FromArgb(
-                    0xFF,
-                    (byte)(0x0A + (badgeAccent.R - 0x0A) * 0.16f),
-                    (byte)(0x0A + (badgeAccent.G - 0x0A) * 0.16f),
-                    (byte)(0x0E + (badgeAccent.B - 0x0E) * 0.16f));
                 using var bgBrush = new LinearGradientBrush(badgeRect, topBg, bottomBg, LinearGradientMode.Vertical);
                 g.FillPath(bgBrush, badgePath);
 
-                // Oben angedockte Notch-Silhouette in Akzentfarbe
-                var notchRect = new RectangleF(10f * s, 2.2f * s, 12f * s, 3.6f * s);
+                // Oben angedockte schwarze Notch-Silhouette
+                var notchRect = new RectangleF(10f * s, 2.2f * s, 12f * s, 3.8f * s);
                 using var notchPath = CreateNotchPath(notchRect, 1.8f * s);
-                using var notchBrush = new SolidBrush(badgeAccent);
+                using var notchBrush = new SolidBrush(fgColor);
                 g.FillPath(notchBrush, notchPath);
 
-                // Kontraststarker Akzent-Rahmen um das Badge
-                using var borderPen = new Pen(badgeAccent, 2f * s);
+                // Dezenter grauer Rahmen für Kontrast auf weißem und dunklem Hintergrund
+                using var borderPen = new Pen(borderColor, 1.5f * s);
                 g.DrawPath(borderPen, badgePath);
 
                 // Geometrisches „FN“-Monogramm (gestochen scharf auch bei 16×16)
@@ -75,14 +68,14 @@ namespace WindowsNotch.Core
                 };
 
                 // „F“
-                g.DrawLine(fgPen, 8.2f * s, 11.2f * s, 8.2f * s, 22.8f * s);
-                g.DrawLine(fgPen, 8.2f * s, 11.2f * s, 14.2f * s, 11.2f * s);
-                g.DrawLine(fgPen, 8.2f * s, 16.8f * s, 12.8f * s, 16.8f * s);
+                g.DrawLine(fgPen, 8.2f * s, 11.4f * s, 8.2f * s, 22.8f * s);
+                g.DrawLine(fgPen, 8.2f * s, 11.4f * s, 14.2f * s, 11.4f * s);
+                g.DrawLine(fgPen, 8.2f * s, 17.0f * s, 12.8f * s, 17.0f * s);
 
                 // „N“
-                g.DrawLine(fgPen, 17.4f * s, 22.8f * s, 17.4f * s, 11.2f * s);
-                g.DrawLine(fgPen, 17.4f * s, 11.2f * s, 23.4f * s, 22.8f * s);
-                g.DrawLine(fgPen, 23.4f * s, 22.8f * s, 23.4f * s, 11.2f * s);
+                g.DrawLine(fgPen, 17.4f * s, 22.8f * s, 17.4f * s, 11.4f * s);
+                g.DrawLine(fgPen, 17.4f * s, 11.4f * s, 23.4f * s, 22.8f * s);
+                g.DrawLine(fgPen, 23.4f * s, 22.8f * s, 23.4f * s, 11.4f * s);
             }
 
             IntPtr hIcon = bmp.GetHicon();
