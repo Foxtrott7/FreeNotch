@@ -24,8 +24,9 @@ $files = @(
     'Foxtrott7.FreeNotch.locale.de-DE.yaml'
 )
 
+$manifestDir = Join-Path $PSScriptRoot 'manifests'
 foreach ($name in $files) {
-    $path = Join-Path $PSScriptRoot $name
+    $path = Join-Path $manifestDir $name
     $content = Get-Content -LiteralPath $path -Raw -Encoding UTF8
     $content = [regex]::Replace($content, '(?m)^PackageVersion:\s*.*$', "PackageVersion: $ver")
     $content = [regex]::Replace($content, '(?m)^(\s*InstallerUrl:\s*).*$', "`${1}$url")

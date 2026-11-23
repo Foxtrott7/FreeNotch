@@ -11,9 +11,9 @@ These templates prepare the Windows Package Manager (`winget`) submission to [`m
    ```
 3. Validate the manifests locally with `winget`:
    ```powershell
-   winget validate --manifest .\installer\winget
+   winget validate --manifest .\installer\winget\manifests
    ```
-4. Fork `microsoft/winget-pkgs` and copy the 4 `.yaml` files into:
+4. Fork `microsoft/winget-pkgs` and copy the 4 `.yaml` files from `installer/winget/manifests/` into:
    ```text
    manifests/f/Foxtrott7/FreeNotch/<VERSION>/
    ```
