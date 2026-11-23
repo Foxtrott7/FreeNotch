@@ -39,6 +39,7 @@ Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
 LicenseFile=..\LICENSE
+SetupIconFile=..\Resources\FreeNotch.ico
 UninstallDisplayName={#MyAppName}
 UninstallDisplayIcon={app}\{#MyAppExeName}
 CloseApplications=yes
@@ -47,6 +48,10 @@ RestartApplications=no
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "german"; MessagesFile: "compiler:Languages\German.isl"
+
+[CustomMessages]
+english.RemoveUserDataPrompt=Do you also want to delete all local FreeNotch settings and data (%AppData%\WindowsNotch)?%n%nChoose "No" to keep your settings for a future reinstallation.
+german.RemoveUserDataPrompt=Möchten Sie auch alle lokalen FreeNotch-Einstellungen und -Daten (%AppData%\WindowsNotch) löschen?%n%nWählen Sie „Nein“, um Ihre Einstellungen für eine spätere Neuinstallation zu behalten.
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
@@ -109,10 +114,19 @@ begin
 end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var
+  DataDir: String;
 begin
   if CurUninstallStep = usPostUninstall then
   begin
     if RegValueExists(HKCU, RunRegPath, RunRegValueName) then
       RegDeleteValue(HKCU, RunRegPath, RunRegValueName);
+
+    DataDir := ExpandConstant('{userappdata}\WindowsNotch');
+    if (not UninstallSilent) and DirExists(DataDir) then
+    begin
+      if MsgBox(CustomMessage('RemoveUserDataPrompt'), mbConfirmation, MB_YESNO or MB_DEFBUTTON2) = IDYES then
+        DelTree(DataDir, True, True, True);
+    end;
   end;
 end;

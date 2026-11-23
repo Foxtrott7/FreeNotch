@@ -9,6 +9,7 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <DefaultItemExcludes>$(DefaultItemExcludes);tests\**</DefaultItemExcludes>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Resources\FreeNotch.ico</ApplicationIcon>
     <RootNamespace>WindowsNotch</RootNamespace>
     <AssemblyName>FreeNotch</AssemblyName>
     <Version>1.0.2</Version>
