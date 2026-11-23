@@ -1,9 +1,10 @@
 param(
     [string]$Version = '',
-    [switch]$SkipFrameworkDependent,
     [switch]$NoRestore,
     [switch]$SkipArchive,
-    [switch]$PackageOnly
+    [switch]$PackageOnly,
+    [switch]$SkipInstaller,
+    [switch]$ChecksumsOnly
 )
 
 $ErrorActionPreference = 'Stop'
@@ -12,6 +13,7 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 $CsprojPath = Join-Path $RepoRoot 'WindowsNotch.csproj'
+$IssPath = Join-Path $RepoRoot 'installer\FreeNotch.iss'
 
 if ([string]::IsNullOrWhiteSpace($Version)) {
     [xml]$proj = Get-Content -LiteralPath $CsprojPath -Encoding UTF8
@@ -23,55 +25,75 @@ if ([string]::IsNullOrWhiteSpace($Version)) {
 $Version = $Version.TrimStart('v')
 
 $PublishRoot = Join-Path $RepoRoot 'publish'
+$PortableDir = Join-Path $PublishRoot 'win-x64-portable'
+$ZipPath = Join-Path $PublishRoot "FreeNotch-v$Version-win-x64-portable.zip"
+$SetupPath = Join-Path $PublishRoot "FreeNotch-v$Version-win-x64-setup.exe"
+
+function Resolve-IsccPath {
+    $cmd = Get-Command iscc -ErrorAction SilentlyContinue
+    if ($cmd) { return $cmd.Source }
+
+    $candidates = @(
+        'C:\Program Files (x86)\Inno Setup 6\ISCC.exe',
+        'C:\Program Files\Inno Setup 6\ISCC.exe',
+        (Join-Path $env:LOCALAPPDATA 'Programs\Inno Setup 6\ISCC.exe')
+    )
+    foreach ($path in $candidates) {
+        if ($path -and (Test-Path -LiteralPath $path)) {
+            return $path
+        }
+    }
+    return $null
+}
+
+function Write-Checksums {
+    $artifacts = @($SetupPath, $ZipPath) | Where-Object { Test-Path -LiteralPath $_ }
+    if (-not $artifacts) {
+        throw "Keine Release-Artefakte in '$PublishRoot' gefunden."
+    }
+
+    $sumsPath = Join-Path $PublishRoot 'SHA256SUMS.txt'
+    $sumLines = foreach ($file in $artifacts) {
+        $hash = (Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash.ToLowerInvariant()
+        "$hash  $(Split-Path -Leaf $file)"
+    }
+    $sumLines | Set-Content -LiteralPath $sumsPath -Encoding UTF8
+
+    Write-Host ''
+    Write-Host '=== Release-Artefakte ==='
+    Get-Content -LiteralPath $sumsPath | ForEach-Object { Write-Host $_ }
+}
+
+if ($ChecksumsOnly) {
+    Write-Checksums
+    return
+}
+
 if (-not $PackageOnly) {
     if (Test-Path -LiteralPath $PublishRoot) {
         Remove-Item -LiteralPath $PublishRoot -Recurse -Force
     }
     New-Item -ItemType Directory -Path $PublishRoot -Force | Out-Null
-}
 
-$InstallerFiles = @(
-    (Join-Path $PSScriptRoot 'Install-PerUser.ps1'),
-    (Join-Path $PSScriptRoot 'Install.cmd'),
-    (Join-Path $PSScriptRoot 'Uninstall-PerUser.ps1')
-)
+    Write-Host "=== Publishe win-x64-portable (SelfContained=true, Version=$Version) ==="
+    $publishArgs = @(
+        'publish', $CsprojPath,
+        '-c', 'Release',
+        '-r', 'win-x64',
+        '--self-contained', 'true',
+        "-p:Version=$Version",
+        '-p:PublishSingleFile=false',
+        '-p:DebugType=None',
+        '-p:DebugSymbols=false',
+        '-o', $PortableDir
+    )
+    if ($NoRestore) {
+        $publishArgs += '--no-restore'
+    }
+    & dotnet @publishArgs | Out-Host
 
-$Variants = @(
-    @{ Name = 'win-x64-portable'; SelfContained = $true; Zip = "FreeNotch-v$Version-win-x64-portable.zip" }
-)
-if (-not $SkipFrameworkDependent) {
-    $Variants += @{ Name = 'win-x64-framework-dependent'; SelfContained = $false; Zip = "FreeNotch-v$Version-win-x64-framework-dependent.zip" }
-}
-
-if (-not $PackageOnly) {
-    foreach ($v in $Variants) {
-        $OutDir = Join-Path $PublishRoot $v.Name
-        Write-Host "=== Publishe $($v.Name) (SelfContained=$($v.SelfContained), Version=$Version) ==="
-
-        $scFlag = if ($v.SelfContained) { 'true' } else { 'false' }
-        $publishArgs = @(
-            'publish', $CsprojPath,
-            '-c', 'Release',
-            '-r', 'win-x64',
-            '--self-contained', $scFlag,
-            "-p:Version=$Version",
-            '-p:PublishSingleFile=false',
-            '-p:DebugType=None',
-            '-p:DebugSymbols=false',
-            '-o', $OutDir
-        )
-        if ($NoRestore) {
-            $publishArgs += '--no-restore'
-        }
-        & dotnet @publishArgs | Out-Host
-
-        if ($LASTEXITCODE -ne 0) {
-            throw "dotnet publish fuer '$($v.Name)' fehlgeschlagen (ExitCode $LASTEXITCODE)."
-        }
-
-        foreach ($file in $InstallerFiles) {
-            Copy-Item -LiteralPath $file -Destination $OutDir -Force
-        }
+    if ($LASTEXITCODE -ne 0) {
+        throw "dotnet publish fehlgeschlagen (ExitCode $LASTEXITCODE)."
     }
 }
 
@@ -79,27 +101,31 @@ if ($SkipArchive) {
     return
 }
 
-$zips = foreach ($v in $Variants) {
-    $OutDir = Join-Path $PublishRoot $v.Name
-    if (-not (Test-Path -LiteralPath $OutDir)) {
-        throw "Publish-Verzeichnis nicht gefunden: $OutDir"
-    }
-    $ZipPath = Join-Path $PublishRoot $v.Zip
-    if (Test-Path -LiteralPath $ZipPath) {
-        Remove-Item -LiteralPath $ZipPath -Force
-    }
-    [System.IO.Compression.ZipFile]::CreateFromDirectory($OutDir, $ZipPath, [System.IO.Compression.CompressionLevel]::Optimal, $false)
-    Write-Host "Erstellt: $ZipPath"
-    $ZipPath
+if (-not (Test-Path -LiteralPath $PortableDir)) {
+    throw "Publish-Verzeichnis nicht gefunden: $PortableDir"
 }
 
-$SumsPath = Join-Path $PublishRoot 'SHA256SUMS.txt'
-$sumLines = foreach ($zip in $zips) {
-    $hash = (Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash.ToLowerInvariant()
-    "$hash  $(Split-Path -Leaf $zip)"
+if (Test-Path -LiteralPath $ZipPath) {
+    Remove-Item -LiteralPath $ZipPath -Force
 }
-$sumLines | Set-Content -LiteralPath $SumsPath -Encoding UTF8
+[System.IO.Compression.ZipFile]::CreateFromDirectory($PortableDir, $ZipPath, [System.IO.Compression.CompressionLevel]::Optimal, $false)
+Write-Host "Erstellt: $ZipPath"
 
-Write-Host ''
-Write-Host '=== Release-Artefakte ==='
-Get-Content -LiteralPath $SumsPath | ForEach-Object { Write-Host $_ }
+if (-not $SkipInstaller) {
+    if (-not (Test-Path -LiteralPath $IssPath)) {
+        throw "Inno-Setup-Skript nicht gefunden: $IssPath"
+    }
+    $iscc = Resolve-IsccPath
+    if (-not $iscc) {
+        throw "Inno Setup (ISCC.exe) nicht gefunden. Installiere via 'winget install JRSoftware.InnoSetup' oder nutze -SkipInstaller."
+    }
+
+    Write-Host "=== Baue Inno-Setup-Installer (Version=$Version) ==="
+    & $iscc "/DMyAppVersion=$Version" "/DMySourceDir=$PortableDir" "/DMyOutputDir=$PublishRoot" $IssPath | Out-Host
+    if ($LASTEXITCODE -ne 0) {
+        throw "ISCC fehlgeschlagen (ExitCode $LASTEXITCODE)."
+    }
+    Write-Host "Erstellt: $SetupPath"
+}
+
+Write-Checksums

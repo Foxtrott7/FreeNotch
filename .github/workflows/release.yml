@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release version (e.g. 1.0.1)'
+        description: 'Release version (e.g. 1.0.3)'
         required: false
         default: ''
 
@@ -29,6 +29,13 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
+
+      - name: Ensure Inno Setup is installed
+        shell: pwsh
+        run: |
+          if (-not (Get-Command iscc -ErrorAction SilentlyContinue) -and -not (Test-Path 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe')) {
+            choco install innosetup -y --no-progress
+          }
 
       - name: Resolve release version
         id: meta
@@ -56,15 +63,10 @@ jobs:
         if: env.SIGNPATH_API_TOKEN != '' && env.SIGNPATH_ORGANIZATION_ID != ''
         shell: pwsh
         run: |
-          $stageRoot = 'publish/unsigned-signing'
-          foreach ($variant in @('win-x64-portable', 'win-x64-framework-dependent')) {
-            $srcDir = Join-Path 'publish' $variant
-            if (-not (Test-Path -LiteralPath $srcDir)) { continue }
-            $dstDir = Join-Path $stageRoot $variant
-            New-Item -ItemType Directory -Path $dstDir -Force | Out-Null
-            foreach ($file in @('FreeNotch.exe', 'FreeNotch.dll')) {
-              Copy-Item -LiteralPath (Join-Path $srcDir $file) -Destination $dstDir -Force
-            }
+          $stageDir = 'publish/unsigned-signing/win-x64-portable'
+          New-Item -ItemType Directory -Path $stageDir -Force | Out-Null
+          foreach ($file in @('FreeNotch.exe', 'FreeNotch.dll')) {
+            Copy-Item -LiteralPath (Join-Path 'publish/win-x64-portable' $file) -Destination $stageDir -Force
           }
 
       - name: Upload unsigned binaries artifact
@@ -93,30 +95,64 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          foreach ($variant in @('win-x64-portable', 'win-x64-framework-dependent')) {
-            $dstDir = Join-Path 'publish' $variant
-            if (-not (Test-Path -LiteralPath $dstDir)) { continue }
-            foreach ($file in @('FreeNotch.exe', 'FreeNotch.dll')) {
-              $signedFile = Join-Path (Join-Path 'publish/signed-signing' $variant) $file
-              if (-not (Test-Path -LiteralPath $signedFile)) {
-                throw "Expected signed file missing: $signedFile"
-              }
-              $sig = Get-AuthenticodeSignature -LiteralPath $signedFile
-              if ($sig.Status -ne 'Valid') {
-                throw "Invalid Authenticode signature for ${signedFile}: $($sig.Status) ($($sig.StatusMessage))"
-              }
-              Copy-Item -LiteralPath $signedFile -Destination (Join-Path $dstDir $file) -Force
+          foreach ($file in @('FreeNotch.exe', 'FreeNotch.dll')) {
+            $signedFile = Join-Path 'publish/signed-signing/win-x64-portable' $file
+            if (-not (Test-Path -LiteralPath $signedFile)) {
+              throw "Expected signed file missing: $signedFile"
             }
+            $sig = Get-AuthenticodeSignature -LiteralPath $signedFile
+            if ($sig.Status -ne 'Valid') {
+              throw "Invalid Authenticode signature for ${signedFile}: $($sig.Status) ($($sig.StatusMessage))"
+            }
+            Copy-Item -LiteralPath $signedFile -Destination (Join-Path 'publish/win-x64-portable' $file) -Force
           }
+
+      - name: Package portable ZIP, Inno Setup installer and SHA256SUMS
+        shell: pwsh
+        run: ./scripts/publish-release.ps1 -Version '${{ steps.meta.outputs.version }}' -PackageOnly
+
+      - name: Upload unsigned installer artifact
+        id: upload-unsigned-installer
+        if: env.SIGNPATH_API_TOKEN != '' && env.SIGNPATH_ORGANIZATION_ID != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-installer
+          path: publish/FreeNotch-v*-win-x64-setup.exe
+          retention-days: 1
+
+      - name: Sign installer with SignPath.io
+        if: env.SIGNPATH_API_TOKEN != '' && env.SIGNPATH_ORGANIZATION_ID != ''
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ env.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG || 'freenotch' }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG || 'release-signing' }}
+          github-artifact-id: ${{ steps.upload-unsigned-installer.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: publish/signed-installer
+
+      - name: Apply signed installer and refresh SHA256SUMS
+        if: env.SIGNPATH_API_TOKEN != '' && env.SIGNPATH_ORGANIZATION_ID != ''
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $setupName = "FreeNotch-v${{ steps.meta.outputs.version }}-win-x64-setup.exe"
+          $signedSetup = Join-Path 'publish/signed-installer' $setupName
+          if (-not (Test-Path -LiteralPath $signedSetup)) {
+            throw "Expected signed installer missing: $signedSetup"
+          }
+          $sig = Get-AuthenticodeSignature -LiteralPath $signedSetup
+          if ($sig.Status -ne 'Valid') {
+            throw "Invalid Authenticode signature for ${signedSetup}: $($sig.Status) ($($sig.StatusMessage))"
+          }
+          Copy-Item -LiteralPath $signedSetup -Destination (Join-Path 'publish' $setupName) -Force
+          ./scripts/publish-release.ps1 -Version '${{ steps.meta.outputs.version }}' -ChecksumsOnly
 
       - name: Notice if SignPath is not configured
         if: env.SIGNPATH_API_TOKEN == '' || env.SIGNPATH_ORGANIZATION_ID == ''
         shell: pwsh
-        run: Write-Host '::notice::SignPath secrets/vars not configured; release ZIPs will contain unsigned binaries.'
-
-      - name: Package release ZIPs and SHA256SUMS
-        shell: pwsh
-        run: ./scripts/publish-release.ps1 -Version '${{ steps.meta.outputs.version }}' -PackageOnly
+        run: Write-Host '::notice::SignPath secrets/vars not configured; release assets will be unsigned.'
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
@@ -124,6 +160,6 @@ jobs:
         with:
           generate_release_notes: true
           files: |
+            publish/FreeNotch-v*-win-x64-setup.exe
             publish/FreeNotch-v*-win-x64-portable.zip
-            publish/FreeNotch-v*-win-x64-framework-dependent.zip
             publish/SHA256SUMS.txt

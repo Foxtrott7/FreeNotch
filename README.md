@@ -32,16 +32,19 @@ FreeNotch turns the top edge of your Windows 11 screen into an adaptive, low-dis
 
 ## Download & Install
 
-No administrator rights are required.
+No administrator rights are required — all releases are self-contained (`.NET 10` included).
 
-1. Download **`FreeNotch-v*-win-x64-portable.zip`** (self-contained, includes .NET runtime) or **`FreeNotch-v*-win-x64-framework-dependent.zip`** (requires [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0)) from [GitHub Releases](https://github.com/Foxtrott7/FreeNotch/releases).
-2. Verify the archive checksum against `SHA256SUMS.txt`:
+1. Download from [GitHub Releases](https://github.com/Foxtrott7/FreeNotch/releases):
+   - **Installer (Recommended)**: **`FreeNotch-v*-win-x64-setup.exe`** — per-user Inno Setup installer (`%LocalAppData%\Programs\FreeNotch`), English & German, Start Menu shortcut, and standard Windows *Apps & Features* uninstall.
+   - **Portable**: **`FreeNotch-v*-win-x64-portable.zip`** — extract anywhere and run **`FreeNotch.exe`** directly (no installation).
+2. Verify the downloaded file against `SHA256SUMS.txt`:
    ```powershell
-   Get-FileHash .\FreeNotch-v*-win-x64-portable.zip -Algorithm SHA256
+   Get-FileHash .\FreeNotch-v*-win-x64-setup.exe -Algorithm SHA256
    ```
-3. Extract the ZIP and either:
-   - Run **`FreeNotch.exe`** directly (portable), or
-   - Run **`Install.cmd`** to install per-user into `%LocalAppData%\Programs\WindowsNotch` with a Start Menu shortcut (uninstall anytime via `Uninstall-PerUser.ps1`).
+
+> **Note on Unsigned Open-Source Builds**: Release builds are currently **unsigned** (no commercial EV certificate yet).
+> - **Windows SmartScreen**: On first launch, Windows may show *"Windows protected your PC"*. After verifying the SHA-256 hash against `SHA256SUMS.txt`, click **More info → Run anyway**.
+> - **Windows 11 Smart App Control**: If Smart App Control is set to *On* (enforcement mode), Windows blocks unsigned executables without a per-app override. In that case, build from source below or wait for future code-signed releases.
 
 ---
 
@@ -51,9 +54,9 @@ FreeNotch is designed for transparent, verifiable execution on Windows 10/11:
 
 - **Hardened Local Services**: `PhoneTransferService` sanitizes filenames against path traversal and reserved Windows device names, verifies directory containment, caps concurrent connections, and validates tokens using `CryptographicOperations.FixedTimeEquals`. External links opened from OCR or Clipboard History enforce `http`/`https` allowlisting; all SQLite queries are parameterized.
 - **Automated CI Verification**: Every push and pull request is built and tested (including localization parity, settings normalization, and security tests) via [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
-- **Reproducible Releases & Code Signing Policy**: Release binaries are built cleanly from this repository via [`.github/workflows/release.yml`](.github/workflows/release.yml) and published with `SHA256SUMS.txt`.
+- **Reproducible Releases & Build Transparency**: Release binaries and the Inno Setup installer are built cleanly from this repository via [`.github/workflows/release.yml`](.github/workflows/release.yml) on GitHub-hosted runners and published alongside `SHA256SUMS.txt`.
   - **Team & Review**: Maintainer & release approver is [@Foxtrott7](https://github.com/Foxtrott7). Releases are triggered exclusively from tagged commits on `master` through GitHub Actions.
-  - **Code Signing Status**: Free open-source code signing via [SignPath.io](https://signpath.io/) ([SignPath Foundation](https://signpath.org/)) is integrated into the release workflow and currently **pending approval** (until approved, release archives are unsigned and verifiable via `SHA256SUMS.txt`).
+  - **Code Signing Status**: Release assets are currently **unsigned** and verifiable via `SHA256SUMS.txt` and public GitHub Actions build logs. Automated code signing (e.g. via SignPath) is prepared in the release workflow for future releases.
 - **Policies**: Full details on data handling and vulnerability reporting are documented in [PRIVACY.md](PRIVACY.md) and [SECURITY.md](SECURITY.md).
 
 ---
@@ -69,7 +72,7 @@ dotnet build WindowsNotch.csproj -v q
 # Run unit & security tests
 dotnet test tests/WindowsNotch.Tests/WindowsNotch.Tests.csproj
 
-# Package portable & framework-dependent release archives + SHA256SUMS.txt
+# Package portable ZIP, Inno Setup installer, and SHA256SUMS.txt (add -SkipInstaller if Inno Setup is not installed)
 .\scripts\publish-release.ps1
 ```
 
@@ -81,9 +84,10 @@ dotnet test tests/WindowsNotch.Tests/WindowsNotch.Tests.csproj
 ├── Services/            # Localization, SQLite storage, GSMTC media, weather, lyrics, fullscreen
 ├── UI/                  # Notch shell, power menu, settings window, onboarding, localization
 ├── Resources/Lang/      # Embedded translations (en.json, de.json)
-├── scripts/             # Release packaging and per-user install/uninstall scripts
+├── installer/           # Per-user Inno Setup script (FreeNotch.iss) & Winget manifest templates
+├── scripts/             # Release publish & packaging script (publish-release.ps1)
 ├── tests/               # xUnit test suite (WindowsNotch.Tests)
-└── .github/workflows/   # CI and SignPath-integrated Release workflows
+└── .github/workflows/   # CI and Release workflows
 ```
 
 ---
@@ -91,7 +95,7 @@ dotnet test tests/WindowsNotch.Tests/WindowsNotch.Tests.csproj
 ## Known Issues & Limitations
 
 - **Music Recognition (Shazam)**: Currently not matching songs reliably across apps/audio streams — fixing the audio fingerprinting pipeline is the top priority for the next patch release.
-- **Unsigned Executables (Pending Approval)**: While the SignPath Foundation application is under review, release binaries are unsigned and may trigger a Windows SmartScreen prompt on first launch (verify checksums via `SHA256SUMS.txt`).
+- **Unsigned Executables**: Release builds are currently unsigned and may trigger a Windows SmartScreen prompt on first launch (verify checksums via `SHA256SUMS.txt`), and cannot run when Windows 11 Smart App Control is in enforcement mode.
 - **System Limits**: Bluetooth battery reporting depends on the device's Windows driver; Windows notification listening uses a 500 ms polling fallback when running unpackaged.
 
 ---

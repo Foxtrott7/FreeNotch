@@ -1,0 +1,31 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.9.0.schema.json
+
+PackageIdentifier: Foxtrott7.FreeNotch
+PackageVersion: 1.0.2
+PackageLocale: en-US
+Publisher: FreeNotch
+PublisherUrl: https://github.com/Foxtrott7/FreeNotch
+PublisherSupportUrl: https://github.com/Foxtrott7/FreeNotch/issues
+PrivacyUrl: https://github.com/Foxtrott7/FreeNotch/blob/master/PRIVACY.md
+PackageName: FreeNotch
+PackageUrl: https://github.com/Foxtrott7/FreeNotch
+License: GPL-3.0
+LicenseUrl: https://github.com/Foxtrott7/FreeNotch/blob/master/LICENSE
+ShortDescription: Calm, native Dynamic Island-style notch for Windows 11.
+Description: >-
+  FreeNotch turns the top edge of your Windows 11 screen into an adaptive,
+  low-distraction command surface with media controls, Bento widgets, file tray,
+  clipboard history, screen OCR, screen capture, weather, finance, and a built-in
+  control center — local-first, zero telemetry, and no administrator rights required.
+Moniker: freenotch
+Tags:
+  - dynamic-island
+  - notch
+  - windows-11
+  - productivity
+  - widgets
+  - media-controls
+  - wpf
+ReleaseNotesUrl: https://github.com/Foxtrott7/FreeNotch/releases/tag/v1.0.2
+ManifestType: defaultLocale
+ManifestVersion: 1.9.0
