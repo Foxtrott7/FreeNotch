@@ -1,8 +1,8 @@
 ; FreeNotch Per-User Inno Setup Script (no admin rights required)
-; Build via: iscc /DMyAppVersion=1.0.2 /DMySourceDir=..\publish\win-x64-portable /DMyOutputDir=..\publish installer\FreeNotch.iss
+; Build via: iscc /DMyAppVersion=1.0.3 /DMySourceDir=..\publish\win-x64-portable /DMyOutputDir=..\publish installer\FreeNotch.iss
 
 #ifndef MyAppVersion
-  #define MyAppVersion "1.0.2"
+  #define MyAppVersion "1.0.3"
 #endif
 
 #ifndef MySourceDir

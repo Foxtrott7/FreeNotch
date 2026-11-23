@@ -12,7 +12,7 @@
     <ApplicationIcon>Resources\FreeNotch.ico</ApplicationIcon>
     <RootNamespace>WindowsNotch</RootNamespace>
     <AssemblyName>FreeNotch</AssemblyName>
-    <Version>1.0.2</Version>
+    <Version>1.0.3</Version>
     <SatelliteResourceLanguages>de;en</SatelliteResourceLanguages>
     <AssemblyTitle>FreeNotch</AssemblyTitle>
     <Product>FreeNotch</Product>

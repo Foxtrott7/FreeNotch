@@ -7,7 +7,6 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
 using WindowsNotch.Core;
-using WindowsNotch.Modules.Pet;
 using WindowsNotch.Services;
 
 namespace WindowsNotch.UI
@@ -145,9 +144,6 @@ namespace WindowsNotch.UI
                     return Metric("RAM", () => SystemMetricsService.Instance.RamPercent);
                 case NotchInfo.Gpu:
                     return Metric("GPU", () => SystemMetricsService.Instance.GpuPercent);
-
-                case NotchInfo.PetEyes:
-                    return (new NotchEyesControl(compact: true), () => { });
 
                 default:
                     return Media();

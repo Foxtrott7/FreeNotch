@@ -8,11 +8,16 @@ namespace WindowsNotch.Modules.SongRecognition
 {
     /// <summary>
     /// Minimaler WASAPI-Systemaudio-Loopback-Sampler für Live-Pegel und kurze Audio-Snippets.
+    /// Unterstützt IEEE Float32 sowie PCM Int16/Int24/Int32 inkl. WAVE_FORMAT_EXTENSIBLE.
     /// </summary>
     internal static class AudioLoopbackCapture
     {
         private const uint AudclntStreamFlagsLoopback = 0x00020000;
         private const int ClsctxAll = 23;
+        private static readonly Guid SubFormatPcm = new("00000001-0000-0010-8000-00aa00389b71");
+        private static readonly Guid SubFormatFloat = new("00000003-0000-0010-8000-00aa00389b71");
+
+        private enum SampleKind { Unsupported, Float32, Int16, Int24, Int32 }
 
         public static Task<(short[] Mono16kSamples, double PeakRms)> CaptureAsync(
             TimeSpan duration,
@@ -43,6 +48,7 @@ namespace WindowsNotch.Modules.SongRecognition
 
                 Marshal.ThrowExceptionForHR(audioClient.GetMixFormat(out pwfx));
                 var wfx = Marshal.PtrToStructure<WaveFormatEx>(pwfx);
+                var kind = ResolveSampleKind(pwfx, wfx);
 
                 long hnsDuration = 10_000_000; // 1s Buffer
                 Marshal.ThrowExceptionForHR(audioClient.Initialize(
@@ -87,7 +93,7 @@ namespace WindowsNotch.Modules.SongRecognition
                                 if (!silent && dataPtr != IntPtr.Zero)
                                 {
                                     Marshal.Copy(dataPtr, buf, 0, bytes);
-                                    frameRms += ComputeRms(buf, wfx.BitsPerSample, wfx.FormatTag);
+                                    frameRms += ComputeRms(buf, kind);
                                     rmsCount++;
                                 }
                                 pcmStream.Write(buf, 0, bytes);
@@ -105,7 +111,7 @@ namespace WindowsNotch.Modules.SongRecognition
                 }
 
                 audioClient.Stop();
-                return (DownsampleTo16kMono(pcmStream.ToArray(), wfx), peakRms);
+                return (DownsampleTo16kMono(pcmStream.ToArray(), wfx, kind), peakRms);
             }
             catch (Exception ex)
             {
@@ -122,36 +128,73 @@ namespace WindowsNotch.Modules.SongRecognition
             }
         }
 
-        private static double ComputeRms(byte[] buf, ushort bitsPerSample, ushort formatTag)
+        private static SampleKind ResolveSampleKind(IntPtr pwfx, WaveFormatEx wfx)
         {
+            if (wfx.FormatTag == 3 && wfx.BitsPerSample == 32)
+                return SampleKind.Float32;
+            if (wfx.FormatTag == 1)
+            {
+                return wfx.BitsPerSample switch
+                {
+                    16 => SampleKind.Int16,
+                    24 => SampleKind.Int24,
+                    32 => SampleKind.Int32,
+                    _ => SampleKind.Unsupported
+                };
+            }
+            if (wfx.FormatTag == 0xFFFE && wfx.Size >= 22)
+            {
+                var ext = Marshal.PtrToStructure<WaveFormatExtensible>(pwfx);
+                if (ext.SubFormat == SubFormatFloat && wfx.BitsPerSample == 32)
+                    return SampleKind.Float32;
+                if (ext.SubFormat == SubFormatPcm)
+                {
+                    return wfx.BitsPerSample switch
+                    {
+                        16 => SampleKind.Int16,
+                        24 => SampleKind.Int24,
+                        32 => SampleKind.Int32,
+                        _ => SampleKind.Unsupported
+                    };
+                }
+            }
+            return wfx.BitsPerSample == 32 ? SampleKind.Float32 : (wfx.BitsPerSample == 16 ? SampleKind.Int16 : SampleKind.Unsupported);
+        }
+
+        private static double ReadSampleNormalized(byte[] buf, int offset, SampleKind kind) => kind switch
+        {
+            SampleKind.Float32 => BitConverter.ToSingle(buf, offset),
+            SampleKind.Int16 => BitConverter.ToInt16(buf, offset) / 32768.0,
+            SampleKind.Int24 => (((sbyte)buf[offset + 2] << 16) | (buf[offset + 1] << 8) | buf[offset]) / 8388608.0,
+            SampleKind.Int32 => BitConverter.ToInt32(buf, offset) / 2147483648.0,
+            _ => 0.0
+        };
+
+        private static double ComputeRms(byte[] buf, SampleKind kind)
+        {
+            int step = kind switch
+            {
+                SampleKind.Float32 or SampleKind.Int32 => 4,
+                SampleKind.Int24 => 3,
+                SampleKind.Int16 => 2,
+                _ => 0
+            };
+            if (step == 0) return 0;
+
             double sum = 0;
             int samples = 0;
-
-            if (bitsPerSample == 32 && (formatTag == 3 || formatTag == 0xFFFE))
+            for (int i = 0; i + step <= buf.Length; i += step)
             {
-                for (int i = 0; i + 3 < buf.Length; i += 4)
-                {
-                    float s = BitConverter.ToSingle(buf, i);
-                    sum += s * s;
-                    samples++;
-                }
+                double s = ReadSampleNormalized(buf, i, kind);
+                sum += s * s;
+                samples++;
             }
-            else if (bitsPerSample == 16)
-            {
-                for (int i = 0; i + 1 < buf.Length; i += 2)
-                {
-                    double s = BitConverter.ToInt16(buf, i) / 32768.0;
-                    sum += s * s;
-                    samples++;
-                }
-            }
-
             return samples > 0 ? Math.Sqrt(sum / samples) : 0;
         }
 
-        private static short[] DownsampleTo16kMono(byte[] pcm, WaveFormatEx wfx)
+        private static short[] DownsampleTo16kMono(byte[] pcm, WaveFormatEx wfx, SampleKind kind)
         {
-            if (pcm.Length == 0 || wfx.BlockAlign == 0 || wfx.Channels == 0 || wfx.SamplesPerSec == 0)
+            if (pcm.Length == 0 || wfx.BlockAlign == 0 || wfx.Channels == 0 || wfx.SamplesPerSec == 0 || kind == SampleKind.Unsupported)
                 return Array.Empty<short>();
 
             int totalFrames = pcm.Length / wfx.BlockAlign;
@@ -164,9 +207,6 @@ namespace WindowsNotch.Modules.SongRecognition
 
             var output = new short[outLen];
             int bytesPerSample = wfx.BitsPerSample / 8;
-            bool isFloat32 = wfx.BitsPerSample == 32 && (wfx.FormatTag == 3 || wfx.FormatTag == 0xFFFE);
-            bool isInt16 = wfx.BitsPerSample == 16;
-            if (!isFloat32 && !isInt16) return Array.Empty<short>();
 
             for (int i = 0; i < outLen; i++)
             {
@@ -184,11 +224,7 @@ namespace WindowsNotch.Modules.SongRecognition
                     {
                         int sampleOffset = frameOffset + ch * bytesPerSample;
                         if (sampleOffset + bytesPerSample > pcm.Length) break;
-
-                        if (isFloat32)
-                            sum += BitConverter.ToSingle(pcm, sampleOffset);
-                        else
-                            sum += BitConverter.ToInt16(pcm, sampleOffset) / 32768.0;
+                        sum += ReadSampleNormalized(pcm, sampleOffset, kind);
                     }
 
                     totalMono += sum / wfx.Channels;
@@ -211,6 +247,15 @@ namespace WindowsNotch.Modules.SongRecognition
             public ushort BlockAlign;
             public ushort BitsPerSample;
             public ushort Size;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct WaveFormatExtensible
+        {
+            public WaveFormatEx Format;
+            public ushort ValidBitsPerSample;
+            public uint ChannelMask;
+            public Guid SubFormat;
         }
 
         [ComImport, Guid("BCDE0395-E52F-467C-8E3D-C4579291692E")]

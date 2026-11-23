@@ -22,9 +22,9 @@ FreeNotch turns the top edge of your Windows 11 screen into an adaptive, low-dis
 | Area | Highlights |
 |---|---|
 | **Dashboard & Widgets** | Reorderable 2×2 Bento grid with Jiggle-Mode & Module Store, Calendar/Tasks/Notes, Stopwatch & Focus Timer, App Carousel, and CPU/RAM/GPU metrics |
-| **Media & Lyrics** | Windows GSMTC media controls with browser hover protection and time-synced karaoke lyrics (optional LRCLIB opt-in) |
+| **Media & Lyrics** | Windows GSMTC media controls with browser hover protection and time-synced karaoke lyrics (optional LRCLIB opt-in, pin-to-expand view) |
 | **Weather & Finance** | Dedicated tabs and synced Bento tiles — Open-Meteo weather with atmospheric effects; Finance watchlist with synced ranges (`Live`, `1D`, `1W`, `1M`, `1Y`, `5Y`, `ALL`) |
-| **Control Center** | Customizable quick-action grid, built-in **Calculator** (keyboard support), per-app **WASAPI Sound Mixer**, **Identify Song** (opt-in Shazam audio fingerprinting with Spotify/Apple Music links), Bluetooth/Wi-Fi/Night Light toggles, and audio output switcher |
+| **Control Center & Power** | Customizable quick-action grid, built-in **Calculator**, per-app **WASAPI Sound Mixer**, **Identify Song** (opt-in Shazam audio fingerprinting via system loopback), Bluetooth/Wi-Fi/Night Light toggles, audio output switcher, and header **Power Menu** with double-click confirmation & **Power Scheduler** (*Shut down*, *Restart*, *Sign out*, *Sleep*) |
 | **Productivity & Capture** | 5-slot drag-and-drop **File Tray**, SQLite **Clipboard History**, **Screen OCR & QR**, **Screen Capture** (WGC + WASAPI), **Downloads** monitor, **Notifications** history & mute filters, and LAN **Phone File Transfer** via QR |
 | **Personalization** | Unified OLED Dark UI, 14 accent presets + custom color/gradient editor, 8 screen positions, modular info slots, *Work / Personal / Gaming* onboarding profiles, and bilingual UI (**English** & **German**) |
 
@@ -94,7 +94,6 @@ dotnet test tests/WindowsNotch.Tests/WindowsNotch.Tests.csproj
 
 ## Known Issues & Limitations
 
-- **Music Recognition (Shazam)**: Currently not matching songs reliably across apps/audio streams — fixing the audio fingerprinting pipeline is the top priority for the next patch release.
 - **Unsigned Executables**: Release builds are currently unsigned and may trigger a Windows SmartScreen prompt on first launch (verify checksums via `SHA256SUMS.txt`), and cannot run when Windows 11 Smart App Control is in enforcement mode.
 - **System Limits**: Bluetooth battery reporting depends on the device's Windows driver; Windows notification listening uses a 500 ms polling fallback when running unpackaged.
 

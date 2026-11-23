@@ -131,17 +131,5 @@ namespace WindowsNotch.Tests
                 Assert.Equal(NotchTheme.Dark, settings.Theme);
             }
         }
-
-        [Fact]
-        public void NotchInfo_PetEyesSlot_IsSanitizedAndPreserved()
-        {
-            var settings = new AppSettings();
-            settings.CollapsedLayout[NotchInfo.PetEyes] = NotchSlot.Center;
-            settings.HoverLayout[NotchInfo.PetEyes] = NotchSlot.Left;
-            settings.Normalize();
-
-            Assert.Equal(NotchSlot.Center, settings.CollapsedLayout[NotchInfo.PetEyes]);
-            Assert.Equal(NotchSlot.Left, settings.HoverLayout[NotchInfo.PetEyes]);
-        }
     }
 }

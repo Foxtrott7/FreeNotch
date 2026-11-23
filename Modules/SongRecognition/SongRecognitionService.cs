@@ -37,7 +37,7 @@ namespace WindowsNotch.Modules.SongRecognition
             }
 
             var (samples16k, peakRms) = await AudioLoopbackCapture.CaptureAsync(
-                TimeSpan.FromSeconds(5.5),
+                TimeSpan.FromSeconds(7.0),
                 onLevel,
                 ct);
 

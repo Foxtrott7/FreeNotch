@@ -985,7 +985,6 @@ namespace WindowsNotch.UI
         private void Notch_MouseEnter(object sender, MouseEventArgs e)
         {
             if (_suppressed) return;
-            Modules.Pet.PetService.Instance.SetHoveringNotch(true);
             _fileTrayAutoCloseTimer.Stop();
             if (S.Mode == InteractionMode.ClickOnly) return;
             if (_state != NotchState.Collapsed) return;
@@ -1014,7 +1013,6 @@ namespace WindowsNotch.UI
         private void Notch_MouseLeave(object sender, MouseEventArgs e)
         {
             if (Mouse.Captured != null) return;
-            Modules.Pet.PetService.Instance.SetHoveringNotch(false);
             _hoverTimer.Stop();
 
             if (_state == NotchState.Preview)

@@ -97,6 +97,7 @@ namespace WindowsNotch.Modules.QuickActions
         {
             Stop();
             _recogCts?.Dispose();
+            _recogCts = null;
             base.Dispose();
         }
 
