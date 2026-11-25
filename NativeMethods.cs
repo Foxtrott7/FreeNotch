@@ -136,6 +136,9 @@ namespace WindowsNotch
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool GetCursorPos(out POINT lpPoint);
 
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
+        public static extern int GetCurrentPackageFullName(ref int packageFullNameLength, IntPtr packageFullName);
+
         public static uint GetIdleTimeMs()
         {
             var info = new LASTINPUTINFO { cbSize = (uint)Marshal.SizeOf<LASTINPUTINFO>() };

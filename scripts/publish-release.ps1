@@ -4,7 +4,11 @@ param(
     [switch]$SkipArchive,
     [switch]$PackageOnly,
     [switch]$SkipInstaller,
-    [switch]$ChecksumsOnly
+    [switch]$SkipMsix,
+    [switch]$ChecksumsOnly,
+    [string]$MsixPackageName = '',
+    [string]$MsixPublisher = '',
+    [string]$MsixPublisherDisplayName = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -14,6 +18,8 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 $CsprojPath = Join-Path $RepoRoot 'WindowsNotch.csproj'
 $IssPath = Join-Path $RepoRoot 'installer\FreeNotch.iss'
+$MsixManifestTemplate = Join-Path $RepoRoot 'installer\msix\AppxManifest.xml'
+$MsixAssetsDir = Join-Path $RepoRoot 'installer\msix\Assets'
 
 if ([string]::IsNullOrWhiteSpace($Version)) {
     [xml]$proj = Get-Content -LiteralPath $CsprojPath -Encoding UTF8
@@ -28,6 +34,7 @@ $PublishRoot = Join-Path $RepoRoot 'publish'
 $PortableDir = Join-Path $PublishRoot 'win-x64-portable'
 $ZipPath = Join-Path $PublishRoot "FreeNotch-v$Version-win-x64-portable.zip"
 $SetupPath = Join-Path $PublishRoot "FreeNotch-v$Version-win-x64-setup.exe"
+$MsixPath = Join-Path $PublishRoot "FreeNotch-v$Version-win-x64.msix"
 
 function Resolve-IsccPath {
     $cmd = Get-Command iscc -ErrorAction SilentlyContinue
@@ -46,8 +53,25 @@ function Resolve-IsccPath {
     return $null
 }
 
+function Resolve-MakeAppxPath {
+    $cmd = Get-Command makeappx -ErrorAction SilentlyContinue
+    if ($cmd) { return $cmd.Source }
+
+    $kits = Get-ChildItem -Path 'C:\Program Files (x86)\Windows Kits\10\bin\*\x64\makeappx.exe' -ErrorAction SilentlyContinue |
+        Sort-Object FullName -Descending |
+        Select-Object -First 1
+    if ($kits) { return $kits.FullName }
+    return $null
+}
+
+function ConvertTo-MsixVersion([string]$rawVersion) {
+    $parts = @($rawVersion.Split('.', [System.StringSplitOptions]::RemoveEmptyEntries))
+    while ($parts.Count -lt 4) { $parts += '0' }
+    return ($parts[0..3] -join '.')
+}
+
 function Write-Checksums {
-    $artifacts = @($SetupPath, $ZipPath) | Where-Object { Test-Path -LiteralPath $_ }
+    $artifacts = @($SetupPath, $ZipPath, $MsixPath) | Where-Object { Test-Path -LiteralPath $_ }
     if (-not $artifacts) {
         throw "Keine Release-Artefakte in '$PublishRoot' gefunden."
     }
@@ -126,6 +150,68 @@ if (-not $SkipInstaller) {
         throw "ISCC fehlgeschlagen (ExitCode $LASTEXITCODE)."
     }
     Write-Host "Erstellt: $SetupPath"
+}
+
+if (-not $SkipMsix) {
+    if (-not (Test-Path -LiteralPath $MsixManifestTemplate)) {
+        throw "MSIX-Manifest-Vorlage nicht gefunden: $MsixManifestTemplate"
+    }
+    $makeappx = Resolve-MakeAppxPath
+    if (-not $makeappx) {
+        throw "Windows SDK Tool (makeappx.exe) nicht gefunden. Installiere Windows 10/11 SDK oder nutze -SkipMsix."
+    }
+
+    $msixStage = Join-Path $PublishRoot 'msix-stage'
+    if (Test-Path -LiteralPath $msixStage) {
+        Remove-Item -LiteralPath $msixStage -Recurse -Force
+    }
+    New-Item -ItemType Directory -Path $msixStage -Force | Out-Null
+
+    try {
+        Copy-Item -Path (Join-Path $PortableDir '*') -Destination $msixStage -Recurse -Force
+        if (Test-Path -LiteralPath $MsixAssetsDir) {
+            Copy-Item -LiteralPath $MsixAssetsDir -Destination (Join-Path $msixStage 'Assets') -Recurse -Force
+        }
+
+        [xml]$manifest = Get-Content -LiteralPath $MsixManifestTemplate -Encoding UTF8
+        $manifest.Package.Identity.Version = ConvertTo-MsixVersion $Version
+        if (-not [string]::IsNullOrWhiteSpace($MsixPackageName)) {
+            $manifest.Package.Identity.Name = $MsixPackageName
+        }
+        if (-not [string]::IsNullOrWhiteSpace($MsixPublisher)) {
+            $manifest.Package.Identity.Publisher = $MsixPublisher
+        }
+        if (-not [string]::IsNullOrWhiteSpace($MsixPublisherDisplayName)) {
+            $manifest.Package.Properties.PublisherDisplayName = $MsixPublisherDisplayName
+        }
+
+        $manifestOut = Join-Path $msixStage 'AppxManifest.xml'
+        $xmlSettings = New-Object System.Xml.XmlWriterSettings
+        $xmlSettings.Indent = $true
+        $xmlSettings.Encoding = New-Object System.Text.UTF8Encoding($false)
+        $writer = [System.Xml.XmlWriter]::Create($manifestOut, $xmlSettings)
+        try {
+            $manifest.Save($writer)
+        }
+        finally {
+            $writer.Dispose()
+        }
+
+        if (Test-Path -LiteralPath $MsixPath) {
+            Remove-Item -LiteralPath $MsixPath -Force
+        }
+        Write-Host "=== Baue MSIX-Paket (Version=$($manifest.Package.Identity.Version)) ==="
+        & $makeappx pack /d $msixStage /p $MsixPath /o | Out-Host
+        if ($LASTEXITCODE -ne 0) {
+            throw "makeappx pack fehlgeschlagen (ExitCode $LASTEXITCODE)."
+        }
+        Write-Host "Erstellt: $MsixPath"
+    }
+    finally {
+        if (Test-Path -LiteralPath $msixStage) {
+            Remove-Item -LiteralPath $msixStage -Recurse -Force
+        }
+    }
 }
 
 Write-Checksums

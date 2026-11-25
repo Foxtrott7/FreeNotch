@@ -107,9 +107,14 @@ jobs:
             Copy-Item -LiteralPath $signedFile -Destination (Join-Path 'publish/win-x64-portable' $file) -Force
           }
 
-      - name: Package portable ZIP, Inno Setup installer and SHA256SUMS
+      - name: Package portable ZIP, Inno Setup installer, MSIX and SHA256SUMS
         shell: pwsh
-        run: ./scripts/publish-release.ps1 -Version '${{ steps.meta.outputs.version }}' -PackageOnly
+        run: |
+          $pkgArgs = @{ Version = '${{ steps.meta.outputs.version }}'; PackageOnly = $true }
+          if ('${{ vars.MSIX_PACKAGE_NAME }}' -ne '') { $pkgArgs.MsixPackageName = '${{ vars.MSIX_PACKAGE_NAME }}' }
+          if ('${{ vars.MSIX_PUBLISHER }}' -ne '') { $pkgArgs.MsixPublisher = '${{ vars.MSIX_PUBLISHER }}' }
+          if ('${{ vars.MSIX_PUBLISHER_DISPLAY_NAME }}' -ne '') { $pkgArgs.MsixPublisherDisplayName = '${{ vars.MSIX_PUBLISHER_DISPLAY_NAME }}' }
+          ./scripts/publish-release.ps1 @pkgArgs
 
       - name: Upload unsigned installer artifact
         id: upload-unsigned-installer
@@ -162,4 +167,5 @@ jobs:
           files: |
             publish/FreeNotch-v*-win-x64-setup.exe
             publish/FreeNotch-v*-win-x64-portable.zip
+            publish/FreeNotch-v*-win-x64.msix
             publish/SHA256SUMS.txt
