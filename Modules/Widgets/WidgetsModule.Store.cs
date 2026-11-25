@@ -255,6 +255,9 @@ namespace WindowsNotch.Modules.Widgets
             int activeCount = order.Count(id => !string.IsNullOrWhiteSpace(id));
             if (activeCount <= 1) return; // Mindestens 1 Kachel bleibt aktiv
 
+            if (string.Equals(order[slot], "lyrics", StringComparison.Ordinal) && _isLyricsPinned)
+                SetLyricsPinned(false);
+
             order[slot] = string.Empty;
             SettingsService.UpdateQuiet(s => s.BentoTileOrder = order);
             RebuildSlotVisual(slot, string.Empty);
@@ -263,6 +266,11 @@ namespace WindowsNotch.Modules.Widgets
 
         private void RebuildSlotVisual(int slot, string tileId)
         {
+            if (string.Equals(tileId, "lyrics", StringComparison.Ordinal))
+            {
+                var mp = MediaPlayerService.Instance;
+                LyricsService.Instance.EnsureForTrack(mp.TrackTitle, mp.Artist, mp.AlbumTitle, mp.Duration, mp.HasKnownTrack);
+            }
             var newTile = BuildBentoTile(tileId);
             _jiggleController?.ReplaceSlotTile(slot, tileId, newTile);
             UpdateExpandedWidgets();

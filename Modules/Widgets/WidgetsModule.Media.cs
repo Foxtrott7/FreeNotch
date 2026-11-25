@@ -15,6 +15,11 @@ namespace WindowsNotch.Modules.Widgets
 
         private Border BuildMediaPlayerTile()
         {
+            _mpLastPlayingVisual = null;
+            _mpLastCover = null;
+            _mpCoverAccent = null;
+            _mpIsScrubbing = false;
+
             _mpCard = new Border
             {
                 Background = NotchDesign.CardBackgroundBrush,

@@ -82,6 +82,14 @@ namespace WindowsNotch.Modules.Widgets
 
         private Border BuildLyricsTile()
         {
+            _lyricsLastCover = null;
+            _lyricsBuiltLineKey = string.Empty;
+            _lyricsLastActiveIdx = int.MinValue;
+            _lyricsLastTrackKey = string.Empty;
+            _lyricsLastProgress = -1.0;
+            _lyricsForceLayoutSync = true;
+            _lyricsGlyphTokens.Clear();
+
             var card = new Border
             {
                 Background = NotchDesign.CreateAccentGradientBrush(),
