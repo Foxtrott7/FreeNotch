@@ -865,7 +865,7 @@ namespace WindowsNotch.Modules.Finance
             }
         }
 
-        internal static void ComputeBufferedBounds(IReadOnlyList<double> points, out double min, out double max, double minPctSpan = 0.0005)
+        internal static void ComputeBufferedBounds(IReadOnlyList<double> points, out double min, out double max, double minPctSpan = 0.0005, double marginRatio = 0.08)
         {
             min = points.Min();
             max = points.Max();
@@ -880,7 +880,7 @@ namespace WindowsNotch.Modules.Finance
             }
             else
             {
-                double margin = span * 0.08;
+                double margin = span * marginRatio;
                 min -= margin;
                 max += margin;
             }
@@ -888,18 +888,52 @@ namespace WindowsNotch.Modules.Finance
 
         private static IReadOnlyList<double> DownsamplePoints(IReadOnlyList<double> points, int maxSamples)
         {
-            if (points.Count <= maxSamples || maxSamples < 2)
+            if (points.Count <= maxSamples || maxSamples < 4)
                 return points;
 
-            var result = new double[maxSamples];
-            double step = (double)(points.Count - 1) / (maxSamples - 1);
-            for (int i = 0; i < maxSamples; i++)
+            // Min-Max-Bucket-Downsampling: behält jeden echten Peak/Ausschlag in chronologischer Reihenfolge.
+            int bucketCount = Math.Max(2, (maxSamples - 2) / 2);
+            var result = new List<double>(bucketCount * 2 + 2) { points[0] };
+            int innerCount = points.Count - 2;
+            double bucketSize = (double)innerCount / bucketCount;
+
+            for (int b = 0; b < bucketCount; b++)
             {
-                int idx = Math.Clamp((int)Math.Round(i * step), 0, points.Count - 1);
-                result[i] = points[idx];
+                int start = 1 + (int)Math.Floor(b * bucketSize);
+                int end = 1 + (int)Math.Floor((b + 1) * bucketSize);
+                if (end <= start) end = start + 1;
+                if (end > points.Count - 1) end = points.Count - 1;
+                if (start >= end) continue;
+
+                int minIdx = start;
+                int maxIdx = start;
+                double minVal = points[start];
+                double maxVal = points[start];
+
+                for (int i = start + 1; i < end; i++)
+                {
+                    double v = points[i];
+                    if (v < minVal) { minVal = v; minIdx = i; }
+                    if (v > maxVal) { maxVal = v; maxIdx = i; }
+                }
+
+                if (minIdx == maxIdx)
+                {
+                    result.Add(minVal);
+                }
+                else if (minIdx < maxIdx)
+                {
+                    result.Add(minVal);
+                    result.Add(maxVal);
+                }
+                else
+                {
+                    result.Add(maxVal);
+                    result.Add(minVal);
+                }
             }
-            result[0] = points[0];
-            result[^1] = points[^1];
+
+            result.Add(points[^1]);
             return result;
         }
 
@@ -932,17 +966,18 @@ namespace WindowsNotch.Modules.Finance
             }
             else
             {
-                ComputeBufferedBounds(points, out min, out max, minPctSpan: 0.001);
+                ComputeBufferedBounds(points, out min, out max, minPctSpan: 0.001, marginRatio: h < 60 ? 0.02 : 0.08);
             }
             double range = Math.Max(max - min, 1e-9);
 
-            // Auf schmalen Hosts (z. B. Bento-Kachel) auf sinnvolle Stützpunkt-Dichte reduzieren,
-            // damit die Kurvenform 1:1 erhalten bleibt statt auf Subpixel-Abstand zu matschen.
-            int maxSamples = Math.Max(16, (int)(plotW / 3.0));
+            // Auf schmalen Hosts (z. B. Bento-Kachel) per Min-Max-Buckets resamplen,
+            // damit jeder Ausschlag erhalten bleibt.
+            int maxSamples = Math.Max(24, (int)(plotW / 2.0));
             IReadOnlyList<double> sampled = DownsamplePoints(points, maxSamples);
 
-            double topPad = Math.Max(padY, strokeThickness + 3);
-            double bottomPad = Math.Max(padY * 0.6, strokeThickness + 2);
+            double padScale = h < 60 ? 1.0 : 3.0;
+            double topPad = Math.Max(padY, strokeThickness + padScale);
+            double bottomPad = Math.Max(padY * 0.6, strokeThickness + (h < 60 ? 1.0 : 2.0));
             double drawH = Math.Max(4, h - topPad - bottomPad);
             double minY = topPad;
             double maxY = topPad + drawH;
@@ -958,9 +993,17 @@ namespace WindowsNotch.Modules.Finance
 
             var lineGeo = new StreamGeometry();
             var fillGeo = new StreamGeometry();
+            bool useCrispLines = h < 60 && sampled.Count > 12;
 
-            void AppendSmoothSegments(StreamGeometryContext ctx, Point[] p, bool isStroked)
+            void AppendChartSegments(StreamGeometryContext ctx, Point[] p, bool isStroked)
             {
+                if (useCrispLines)
+                {
+                    for (int i = 1; i < p.Length; i++)
+                        ctx.LineTo(p[i], isStroked: isStroked, isSmoothJoin: true);
+                    return;
+                }
+
                 for (int i = 0; i < p.Length - 1; i++)
                 {
                     Point p0 = i > 0 ? p[i - 1] : p[i];
@@ -981,7 +1024,7 @@ namespace WindowsNotch.Modules.Finance
             using (var ctx = lineGeo.Open())
             {
                 ctx.BeginFigure(pts[0], isFilled: false, isClosed: false);
-                AppendSmoothSegments(ctx, pts, isStroked: true);
+                AppendChartSegments(ctx, pts, isStroked: true);
             }
             lineGeo.Freeze();
 
@@ -989,7 +1032,7 @@ namespace WindowsNotch.Modules.Finance
             {
                 ctx.BeginFigure(new Point(pts[0].X, h), isFilled: true, isClosed: true);
                 ctx.LineTo(pts[0], isStroked: false, isSmoothJoin: false);
-                AppendSmoothSegments(ctx, pts, isStroked: false);
+                AppendChartSegments(ctx, pts, isStroked: false);
                 ctx.LineTo(new Point(pts[^1].X, h), isStroked: false, isSmoothJoin: false);
             }
             fillGeo.Freeze();

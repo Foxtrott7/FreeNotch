@@ -16,7 +16,7 @@ namespace WindowsNotch.Modules.Widgets
     {
         private Border BuildFinanceTile()
         {
-            var card = CreateBentoAppCard(new Thickness(14, 11, 14, 11));
+            var card = CreateBentoAppCard(new Thickness(14, 9, 14, 9));
             card.Cursor = Cursors.Hand;
             card.ToolTip = L.T("finance.cycle_tooltip");
 
@@ -75,8 +75,8 @@ namespace WindowsNotch.Modules.Widgets
             // Unten: Mini-Sparkline
             var sparkHost = new Grid
             {
-                Height = 32,
-                Margin = new Thickness(0, 4, 0, 0),
+                Height = 42,
+                Margin = new Thickness(0, 2, 0, 0),
                 ClipToBounds = true
             };
             DockPanel.SetDock(sparkHost, Dock.Bottom);
@@ -91,7 +91,7 @@ namespace WindowsNotch.Modules.Widgets
             {
                 Foreground = NotchDesign.TextPrimaryBrush,
                 FontFamily = NotchDesign.UiDisplayFont,
-                FontSize = 23,
+                FontSize = 20,
                 FontWeight = FontWeights.Normal
             };
             Typography.SetNumeralAlignment(priceText, FontNumeralAlignment.Tabular);
@@ -177,7 +177,7 @@ namespace WindowsNotch.Modules.Widgets
                 double? overrideMax = null;
                 if (activeRange == "LIVE" && pts != null && pts.Count >= 2)
                 {
-                    FinanceModule.ComputeBufferedBounds(pts, out double bMin, out double bMax, minPctSpan: 0.0005);
+                    FinanceModule.ComputeBufferedBounds(pts, out double bMin, out double bMax, minPctSpan: 0.0005, marginRatio: 0.02);
                     overrideMin = bMin;
                     overrideMax = bMax;
                 }
@@ -186,12 +186,12 @@ namespace WindowsNotch.Modules.Widgets
                     sparkHost,
                     pts,
                     isUp ? NotchDesign.AccentGreen : NotchDesign.AccentRed,
-                    strokeThickness: 1.6,
-                    padY: 4,
+                    strokeThickness: 1.75,
+                    padY: 2,
                     overrideMin: overrideMin,
                     overrideMax: overrideMax,
                     showLiveTip: activeRange == "LIVE",
-                    fillAlpha: 0x22);
+                    fillAlpha: 0x26);
             }
 
             Point downPt = default;
