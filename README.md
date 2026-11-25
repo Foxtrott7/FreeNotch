@@ -21,6 +21,12 @@
 
 FreeNotch turns the top edge of your Windows 11 screen into an adaptive, low-distraction command surface. Media controls, live widgets, system utilities, and productivity tools live inside a single GPU-accelerated OLED shell that stays out of your way when you work or game.
 
+## Preview
+
+| Collapsed Pill | 2×2 Bento Dashboard | Control Center |
+| :---: | :---: | :---: |
+| <img src=".github/assets/preview-collapsed.jpg" alt="FreeNotch Collapsed Pill showing time, weather, and CPU usage" width="100%" /> | <img src=".github/assets/preview-dashboard.jpg" alt="FreeNotch 2x2 Bento Dashboard with Synced Lyrics, Media Player, Finance, and Weather" width="100%" /> | <img src=".github/assets/preview-control-center.jpg" alt="FreeNotch Control Center with volume slider and quick actions" width="100%" /> |
+
 ## Core Principles
 
 - **Local-First & Zero Telemetry**: No user accounts, no ads, no analytics, and no crash-reporting servers. Settings (`settings.json`), local databases (`notch.db`), and diagnostic logs (`error.log`) remain strictly on your device under `%AppData%\WindowsNotch\`.
