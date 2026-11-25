@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src=".github/assets/hero-banner.svg" alt="FreeNotch — Dynamic Island for Windows 11" width="100%" />
+<img src=".github/assets/preview-dashboard.jpg" alt="FreeNotch — Dynamic Island for Windows 11 (2×2 Bento Dashboard)" width="100%" />
 
 <br />
 
@@ -23,9 +23,9 @@ FreeNotch turns the top edge of your Windows 11 screen into an adaptive, low-dis
 
 ## Preview
 
-| Collapsed Pill | 2×2 Bento Dashboard | Control Center |
-| :---: | :---: | :---: |
-| <img src=".github/assets/preview-collapsed.jpg" alt="FreeNotch Collapsed Pill showing time, weather, and CPU usage" width="100%" /> | <img src=".github/assets/preview-dashboard.jpg" alt="FreeNotch 2x2 Bento Dashboard with Synced Lyrics, Media Player, Finance, and Weather" width="100%" /> | <img src=".github/assets/preview-control-center.jpg" alt="FreeNotch Control Center with volume slider and quick actions" width="100%" /> |
+| Collapsed Pill | Control Center |
+| :---: | :---: |
+| <img src=".github/assets/preview-collapsed.jpg" alt="FreeNotch Collapsed Pill showing time, weather, and CPU usage" width="100%" /> | <img src=".github/assets/preview-control-center.jpg" alt="FreeNotch Control Center with volume slider and quick actions" width="100%" /> |
 
 ## Core Principles
 
