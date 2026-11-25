@@ -10,7 +10,7 @@
 
 [![Latest Release](https://img.shields.io/github/v/release/Foxtrott7/FreeNotch?style=flat-square&color=6D28D9)](https://github.com/Foxtrott7/FreeNotch/releases)
 [![CI](https://img.shields.io/github/actions/workflow/status/Foxtrott7/FreeNotch/ci.yml?branch=master&style=flat-square&label=CI)](https://github.com/Foxtrott7/FreeNotch/actions/workflows/ci.yml)
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg?style=flat-square)](LICENSE)
+[![License: PolyForm Noncommercial 1.0.0](https://img.shields.io/badge/License-PolyForm%20Noncommercial%201.0.0-blue.svg?style=flat-square)](LICENSE)
 [![.NET 10](https://img.shields.io/badge/.NET-10%20LTS-512BD4?style=flat-square)](https://dotnet.microsoft.com/download/dotnet/10.0)
 
 [Download Latest Release](https://github.com/Foxtrott7/FreeNotch/releases/latest) · [Privacy Policy](PRIVACY.md) · [Security Policy](SECURITY.md) · [Build from Source](#build-from-source)
@@ -122,4 +122,4 @@ dotnet test tests/WindowsNotch.Tests/WindowsNotch.Tests.csproj
 
 - Bug reports and pull requests are welcome on [GitHub](https://github.com/Foxtrott7/FreeNotch). Please keep changes focused, bilingual (`en.json` & `de.json`), and covered by `dotnet test`.
 - Security issues must be reported privately via [GitHub Security Advisories](https://github.com/Foxtrott7/FreeNotch/security/advisories/new) (see [SECURITY.md](SECURITY.md)).
-- FreeNotch is free software licensed under the **[GNU General Public License v3.0 (GPLv3)](LICENSE)**.
+- FreeNotch is source-available software licensed under the **[PolyForm Noncommercial License 1.0.0](LICENSE)** — free to inspect, fork, and modify for non-commercial use; commercial use, resale, or paid redistribution requires prior permission.

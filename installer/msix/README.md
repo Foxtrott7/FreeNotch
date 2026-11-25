@@ -26,5 +26,4 @@ Lokal bauen (erzeugt `publish\FreeNotch-v<Version>-win-x64.msix`):
 
 Anschließend im Partner Center bei der Einreichung:
 1. Die erzeugte `.msix`-Datei hochladen (muss **nicht** selbst signiert werden – Microsoft signiert sie bei der Zertifizierung automatisch).
-2. **`runFullTrust`-Hinweis** im Einreichungsformular kurz begründen (z. B.: *„Open-source desktop notch utility for Windows 11 requiring Win32 window positioning, WASAPI audio session mixer, media/system telemetry, and screen capture.“*).
-3. **GPLv3**: Den Link zum Quellcode (`https://github.com/Foxtrott7/FreeNotch`) in der Store-Beschreibung angeben und keine zusätzlichen Nutzungsbeschränkungen hinzufügen.
+2. **`runFullTrust`-Hinweis** im Einreichungsformular kurz begründen (unter *Übermittlungsoptionen → Hinweise zur Zertifizierung*, z. B.: *„Desktop notch utility for Windows 11 requiring Win32 window positioning, WASAPI audio session mixer, media/system telemetry, and screen capture.“*).
