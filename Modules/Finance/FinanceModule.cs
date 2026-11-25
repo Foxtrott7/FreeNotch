@@ -865,7 +865,7 @@ namespace WindowsNotch.Modules.Finance
             }
         }
 
-        private static void ComputeBufferedBounds(IReadOnlyList<double> points, out double min, out double max, double minPctSpan = 0.0005)
+        internal static void ComputeBufferedBounds(IReadOnlyList<double> points, out double min, out double max, double minPctSpan = 0.0005)
         {
             min = points.Min();
             max = points.Max();
@@ -886,6 +886,23 @@ namespace WindowsNotch.Modules.Finance
             }
         }
 
+        private static IReadOnlyList<double> DownsamplePoints(IReadOnlyList<double> points, int maxSamples)
+        {
+            if (points.Count <= maxSamples || maxSamples < 2)
+                return points;
+
+            var result = new double[maxSamples];
+            double step = (double)(points.Count - 1) / (maxSamples - 1);
+            for (int i = 0; i < maxSamples; i++)
+            {
+                int idx = Math.Clamp((int)Math.Round(i * step), 0, points.Count - 1);
+                result[i] = points[idx];
+            }
+            result[0] = points[0];
+            result[^1] = points[^1];
+            return result;
+        }
+
         internal static void RenderSparkline(
             Panel host,
             IReadOnlyList<double>? points,
@@ -902,8 +919,7 @@ namespace WindowsNotch.Modules.Finance
 
             double w = host.ActualWidth > 10 ? host.ActualWidth : host.Width;
             double h = host.ActualHeight > 10 ? host.ActualHeight : host.Height;
-            if (double.IsNaN(w) || w <= 10) w = 420;
-            if (double.IsNaN(h) || h <= 10) h = 110;
+            if (double.IsNaN(w) || w <= 10 || double.IsNaN(h) || h <= 10) return;
 
             double rightPad = showLiveTip ? 10 : 0;
             double plotW = Math.Max(20, w - rightPad);
@@ -920,23 +936,30 @@ namespace WindowsNotch.Modules.Finance
             }
             double range = Math.Max(max - min, 1e-9);
 
+            // Auf schmalen Hosts (z. B. Bento-Kachel) auf sinnvolle Stützpunkt-Dichte reduzieren,
+            // damit die Kurvenform 1:1 erhalten bleibt statt auf Subpixel-Abstand zu matschen.
+            int maxSamples = Math.Max(16, (int)(plotW / 3.0));
+            IReadOnlyList<double> sampled = DownsamplePoints(points, maxSamples);
+
             double topPad = Math.Max(padY, strokeThickness + 3);
             double bottomPad = Math.Max(padY * 0.6, strokeThickness + 2);
             double drawH = Math.Max(4, h - topPad - bottomPad);
+            double minY = topPad;
+            double maxY = topPad + drawH;
 
-            var pts = new Point[points.Count];
-            for (int i = 0; i < points.Count; i++)
+            var pts = new Point[sampled.Count];
+            for (int i = 0; i < sampled.Count; i++)
             {
-                double x = (double)i / (points.Count - 1) * plotW;
-                double normY = Math.Clamp((points[i] - min) / range, 0.0, 1.0);
-                double y = topPad + drawH - (normY * drawH);
+                double x = (double)i / (sampled.Count - 1) * plotW;
+                double normY = Math.Clamp((sampled[i] - min) / range, 0.0, 1.0);
+                double y = maxY - (normY * drawH);
                 pts[i] = new Point(x, y);
             }
 
             var lineGeo = new StreamGeometry();
             var fillGeo = new StreamGeometry();
 
-            static void AppendSmoothSegments(StreamGeometryContext ctx, Point[] p)
+            void AppendSmoothSegments(StreamGeometryContext ctx, Point[] p, bool isStroked)
             {
                 for (int i = 0; i < p.Length - 1; i++)
                 {
@@ -945,16 +968,20 @@ namespace WindowsNotch.Modules.Finance
                     Point p2 = p[i + 1];
                     Point p3 = i + 2 < p.Length ? p[i + 2] : p[i + 1];
 
-                    var c1 = new Point(p1.X + (p2.X - p0.X) / 6.0, p1.Y + (p2.Y - p0.Y) / 6.0);
-                    var c2 = new Point(p2.X - (p3.X - p1.X) / 6.0, p2.Y - (p3.Y - p1.Y) / 6.0);
-                    ctx.BezierTo(c1, c2, p2, isStroked: true, isSmoothJoin: true);
+                    var c1 = new Point(
+                        p1.X + (p2.X - p0.X) / 6.0,
+                        Math.Clamp(p1.Y + (p2.Y - p0.Y) / 6.0, minY, maxY));
+                    var c2 = new Point(
+                        p2.X - (p3.X - p1.X) / 6.0,
+                        Math.Clamp(p2.Y - (p3.Y - p1.Y) / 6.0, minY, maxY));
+                    ctx.BezierTo(c1, c2, p2, isStroked: isStroked, isSmoothJoin: true);
                 }
             }
 
             using (var ctx = lineGeo.Open())
             {
                 ctx.BeginFigure(pts[0], isFilled: false, isClosed: false);
-                AppendSmoothSegments(ctx, pts);
+                AppendSmoothSegments(ctx, pts, isStroked: true);
             }
             lineGeo.Freeze();
 
@@ -962,16 +989,7 @@ namespace WindowsNotch.Modules.Finance
             {
                 ctx.BeginFigure(new Point(pts[0].X, h), isFilled: true, isClosed: true);
                 ctx.LineTo(pts[0], isStroked: false, isSmoothJoin: false);
-                for (int i = 0; i < pts.Length - 1; i++)
-                {
-                    Point p0 = i > 0 ? pts[i - 1] : pts[i];
-                    Point p1 = pts[i];
-                    Point p2 = pts[i + 1];
-                    Point p3 = i + 2 < pts.Length ? pts[i + 2] : pts[i + 1];
-                    var c1 = new Point(p1.X + (p2.X - p0.X) / 6.0, p1.Y + (p2.Y - p0.Y) / 6.0);
-                    var c2 = new Point(p2.X - (p3.X - p1.X) / 6.0, p2.Y - (p3.Y - p1.Y) / 6.0);
-                    ctx.BezierTo(c1, c2, p2, isStroked: false, isSmoothJoin: true);
-                }
+                AppendSmoothSegments(ctx, pts, isStroked: false);
                 ctx.LineTo(new Point(pts[^1].X, h), isStroked: false, isSmoothJoin: false);
             }
             fillGeo.Freeze();
@@ -979,6 +997,10 @@ namespace WindowsNotch.Modules.Finance
             var fillPath = new Path
             {
                 Data = fillGeo,
+                Width = w,
+                Height = h,
+                HorizontalAlignment = HorizontalAlignment.Left,
+                VerticalAlignment = VerticalAlignment.Top,
                 IsHitTestVisible = false,
                 Fill = new LinearGradientBrush(
                     Color.FromArgb(fillAlpha, strokeColor.R, strokeColor.G, strokeColor.B),
@@ -989,6 +1011,10 @@ namespace WindowsNotch.Modules.Finance
             var linePath = new Path
             {
                 Data = lineGeo,
+                Width = w,
+                Height = h,
+                HorizontalAlignment = HorizontalAlignment.Left,
+                VerticalAlignment = VerticalAlignment.Top,
                 IsHitTestVisible = false,
                 Stroke = new SolidColorBrush(strokeColor),
                 StrokeThickness = strokeThickness,

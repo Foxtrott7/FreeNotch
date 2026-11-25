@@ -157,11 +157,6 @@ namespace WindowsNotch.Modules.Widgets
                 priceText.Text = FinanceService.FormatPrice(quote.Price, quote.Currency);
                 nameText.Text = string.IsNullOrWhiteSpace(quote.Name) ? activeSym : quote.Name;
 
-                double pct = quote.GetChangePercent(activeRange);
-                bool isUp = pct >= 0;
-                changeText.Text = FinanceService.FormatChangePercent(pct);
-                changeText.Foreground = new SolidColorBrush(isUp ? NotchDesign.AccentGreen : NotchDesign.AccentRed);
-
                 List<double>? pts = null;
                 lock (quote)
                 {
@@ -169,8 +164,22 @@ namespace WindowsNotch.Modules.Widgets
                         pts = sp.ToList();
                     else if (activeRange == "LIVE")
                         pts = new List<double> { quote.Price, quote.Price };
-                    else if (quote.Sparklines.TryGetValue("1D", out var fallback) && fallback.Count >= 2)
-                        pts = fallback.ToList();
+                }
+
+                double pct = activeRange == "LIVE" && pts != null && pts.Count >= 2 && pts[0] > 0
+                    ? ((pts[^1] - pts[0]) / pts[0]) * 100.0
+                    : quote.GetChangePercent(activeRange);
+                bool isUp = pct >= 0;
+                changeText.Text = FinanceService.FormatChangePercent(pct);
+                changeText.Foreground = new SolidColorBrush(isUp ? NotchDesign.AccentGreen : NotchDesign.AccentRed);
+
+                double? overrideMin = null;
+                double? overrideMax = null;
+                if (activeRange == "LIVE" && pts != null && pts.Count >= 2)
+                {
+                    FinanceModule.ComputeBufferedBounds(pts, out double bMin, out double bMax, minPctSpan: 0.0005);
+                    overrideMin = bMin;
+                    overrideMax = bMax;
                 }
 
                 FinanceModule.RenderSparkline(
@@ -179,6 +188,8 @@ namespace WindowsNotch.Modules.Widgets
                     isUp ? NotchDesign.AccentGreen : NotchDesign.AccentRed,
                     strokeThickness: 1.6,
                     padY: 4,
+                    overrideMin: overrideMin,
+                    overrideMax: overrideMax,
                     showLiveTip: activeRange == "LIVE",
                     fillAlpha: 0x22);
             }
@@ -220,6 +231,9 @@ namespace WindowsNotch.Modules.Widgets
                 card.Dispatcher.BeginInvoke(() =>
                 {
                     if (!card.IsLoaded) return;
+                    string? active = FinanceService.Instance.GetActiveSymbol();
+                    if (!string.IsNullOrEmpty(active))
+                        _ = FinanceService.Instance.EnsureSymbolAsync(active, SettingsService.Current.FinanceRange, force: false);
                     UpdateFinance();
                 });
             }
