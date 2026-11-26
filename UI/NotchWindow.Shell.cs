@@ -22,21 +22,17 @@ namespace WindowsNotch.UI
             }
         }
 
-        private const double PeekWidth = 120.0;
-        private const double PeekHeight = 14.0;
+        private const double PeekWidth = 112.0;
+        private const double PeekHeight = 12.0;
 
         private bool IsCollapsedPeekActive =>
             S.IdleVisibility == IdleVisibilityMode.AlwaysPeek ||
             (S.IdleVisibility == IdleVisibilityMode.PeekWhenEmpty && _collapsedLiveModule == null && _idleView == null);
 
-        private double GetTargetNotchOpacity()
+        private void UpdatePeekVisualState()
         {
-            if (_suppressed) return 0.0;
-            if (_state != NotchState.Collapsed || !IsCollapsedPeekActive) return 1.0;
-            double baseOpacity = Math.Clamp(S.IdlePeekOpacityPercent, 20, 100) / 100.0;
-            if (S.Mode == InteractionMode.ClickOnly && NotchBorder.IsMouseOver)
-                return Math.Min(1.0, Math.Max(baseOpacity + 0.18, 0.85));
-            return baseOpacity;
+            // Im Peek-Zustand Schatten komplett abschalten, damit unsichtbare Alpha>0-Schattenpixel keine Klicks auf Tabs darunter abfangen.
+            NotchShadow.Opacity = (_state == NotchState.Collapsed && IsCollapsedPeekActive) ? 0.0 : 0.45;
         }
 
         private (double w, double h) SizeFor(NotchState state)

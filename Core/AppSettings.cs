@@ -66,7 +66,6 @@ namespace WindowsNotch.Core
         // Verhalten
         public InteractionMode Mode { get; set; } = InteractionMode.HoverAndClick;
         public IdleVisibilityMode IdleVisibility { get; set; } = IdleVisibilityMode.PeekWhenEmpty;
-        public int IdlePeekOpacityPercent { get; set; } = 72;
         public double HoverDelayMs { get; set; } = 150;
         public bool CloseOnFocusLoss { get; set; } = true;
 
@@ -347,7 +346,6 @@ namespace WindowsNotch.Core
             HoverLayout = NotchInfo.Sanitize(HoverLayout);
             if (!Enum.IsDefined(IdleVisibility))
                 IdleVisibility = IdleVisibilityMode.PeekWhenEmpty;
-            IdlePeekOpacityPercent = Math.Clamp(IdlePeekOpacityPercent, 20, 100);
             TargetFrameRate = TargetFrameRate switch
             {
                 <= 60 => 60,

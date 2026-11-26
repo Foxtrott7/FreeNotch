@@ -121,8 +121,7 @@
   "settings.behavior.idle_always_visible": "Immer voll sichtbar",
   "settings.behavior.idle_peek_when_empty": "Dezent, wenn leer (Mini-Pille)",
   "settings.behavior.idle_always_peek": "Immer dezent (Mini-Pille)",
-  "settings.behavior.idle_peek_opacity": "Mini-Pille Deckkraft",
-  "settings.behavior.idle_visibility_hint": "Verkleinert die Notch im Ruhezustand auf eine halbtransparente Mini-Pille, damit Browser-Tabs sichtbar bleiben. Bei Hover oder Klick öffnet sie sich normal.",
+  "settings.behavior.idle_visibility_hint": "Verkleinert die Notch im Ruhezustand auf eine kompakte Mini-Pille, damit Browser-Tabs sichtbar und anklickbar bleiben. Bei Hover oder Klick öffnet sie sich normal.",
 
   "settings.fullscreen.title": "Vollbild",
   "settings.fullscreen.hide_title": "Notch automatisch ausblenden bei",
