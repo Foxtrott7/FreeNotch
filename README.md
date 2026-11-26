@@ -46,7 +46,7 @@ FreeNotch turns the top edge of your Windows 11 screen into an adaptive, low-dis
 | **Control Center** | Customizable quick-action grid with Jiggle-Mode, built-in **Calculator** (full keyboard support), per-app **WASAPI Sound Mixer**, Bluetooth / Wi-Fi / Night Light toggles, and audio output switcher |
 | **Header Power Menu** | Quick access next to Settings: Quit, Sleep, double-click confirmation for Restart & Shut down, and a **Power Scheduler** (*Shut down*, *Restart*, *Sign out*, *Sleep* at a chosen time or `+15m`/`+30m`/`+1h` preset) |
 | **Productivity & Capture** | 5-slot drag-and-drop **File Tray**, SQLite **Clipboard History**, **Screen OCR & QR Scanner**, **Screen Capture** (WGC + WASAPI audio), **Downloads** monitor, **Notifications** history & filters, and LAN **Phone File Transfer** via QR |
-| **Personalization** | Unified OLED Dark UI, 14 accent presets + custom color/gradient editor, 8 screen positions, modular collapsed/hover info slots, *Work / Complete / Gaming* onboarding profiles, and bilingual UI (**English** & **German**) |
+| **Personalization** | Unified OLED Dark UI, 14 accent presets + custom color/gradient editor, 8 screen positions, modular collapsed/hover info slots, subtle idle mini-pill mode with adjustable opacity, *Work / Complete / Gaming* onboarding profiles, and bilingual UI (**English** & **German**) |
 
 ---
 

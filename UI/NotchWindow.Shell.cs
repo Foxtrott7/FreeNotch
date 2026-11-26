@@ -24,8 +24,6 @@ namespace WindowsNotch.UI
 
         private const double PeekWidth = 120.0;
         private const double PeekHeight = 14.0;
-        private const double PeekOpacity = 0.62;
-        private const double PeekHoverFeedbackOpacity = 0.85;
 
         private bool IsCollapsedPeekActive =>
             S.IdleVisibility == IdleVisibilityMode.AlwaysPeek ||
@@ -35,9 +33,10 @@ namespace WindowsNotch.UI
         {
             if (_suppressed) return 0.0;
             if (_state != NotchState.Collapsed || !IsCollapsedPeekActive) return 1.0;
+            double baseOpacity = Math.Clamp(S.IdlePeekOpacityPercent, 20, 100) / 100.0;
             if (S.Mode == InteractionMode.ClickOnly && NotchBorder.IsMouseOver)
-                return PeekHoverFeedbackOpacity;
-            return PeekOpacity;
+                return Math.Min(1.0, Math.Max(baseOpacity + 0.18, 0.85));
+            return baseOpacity;
         }
 
         private (double w, double h) SizeFor(NotchState state)

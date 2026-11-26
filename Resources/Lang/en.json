@@ -121,6 +121,7 @@
   "settings.behavior.idle_always_visible": "Always fully visible",
   "settings.behavior.idle_peek_when_empty": "Subtle when empty (mini pill)",
   "settings.behavior.idle_always_peek": "Always subtle (mini pill)",
+  "settings.behavior.idle_peek_opacity": "Mini pill opacity",
   "settings.behavior.idle_visibility_hint": "Shrinks the idle notch into a semi-transparent mini pill so browser tabs remain visible. Hover or click opens it normally.",
 
   "settings.fullscreen.title": "Fullscreen",

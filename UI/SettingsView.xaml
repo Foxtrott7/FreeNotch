@@ -687,6 +687,16 @@
 
                                 <TextBlock Text="{ui:Loc settings.behavior.idle_visibility_title}" Style="{StaticResource CardTitle}" Margin="0,0,0,8" />
                                 <ComboBox x:Name="IdleVisibilityBox" Width="280" HorizontalAlignment="Left" />
+                                <Grid Margin="0,12,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="180" /><ColumnDefinition Width="*" /><ColumnDefinition Width="55" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{ui:Loc settings.behavior.idle_peek_opacity}" VerticalAlignment="Center" />
+                                    <Slider x:Name="S7" Grid.Column="1" Minimum="20" Maximum="100" TickFrequency="5"
+                                            IsSnapToTickEnabled="True" Value="{Binding IdlePeekOpacityPercent, Mode=TwoWay}" />
+                                    <TextBlock Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondary}"
+                                               Text="{Binding Value, ElementName=S7, StringFormat={}{0:0}%}" />
+                                </Grid>
                                 <TextBlock Style="{StaticResource MutedHint}" Margin="0,8,0,0"
                                            Text="{ui:Loc settings.behavior.idle_visibility_hint}" />
 
