@@ -24,8 +24,8 @@ namespace WindowsNotch.UI
 
         private const double PeekWidth = 120.0;
         private const double PeekHeight = 14.0;
-        private const double PeekOpacity = 0.42;
-        private const double PeekHoverFeedbackOpacity = 0.78;
+        private const double PeekOpacity = 0.62;
+        private const double PeekHoverFeedbackOpacity = 0.85;
 
         private bool IsCollapsedPeekActive =>
             S.IdleVisibility == IdleVisibilityMode.AlwaysPeek ||
