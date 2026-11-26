@@ -54,6 +54,7 @@ namespace WindowsNotch.UI
         private double _lastCollapsedW = double.NaN;
         private double _lastCollapsedH = double.NaN;
         private bool? _lastCollapsedHasLive;
+        private bool? _lastCollapsedPeek;
 
         public Forms.Screen Screen { get; }
         public string DeviceName => Screen.DeviceName;
@@ -289,7 +290,7 @@ namespace WindowsNotch.UI
                     if (wasSuppressed || _state == NotchState.Collapsed)
                         ApplySettingsInstant();
                     else
-                        ClearSuppressAnimations();
+                        ClearSuppressAnimations(opacity: GetTargetNotchOpacity());
                     NotchBorder.IsHitTestVisible = true;
                     // Ohne Aktivierung anzeigen, damit kein Fokus gestohlen wird (z. B. aus einem Spiel)
                     NativeMethods.ShowWindow(hwnd, NativeMethods.SW_SHOWNOACTIVATE);
@@ -318,14 +319,14 @@ namespace WindowsNotch.UI
                 animY.Completed += (_, _) =>
                 {
                     if (version != _suppressAnimVersion || _suppressed) return;
-                    ClearSuppressAnimations();
+                    ClearSuppressAnimations(opacity: GetTargetNotchOpacity());
                 };
 
                 NotchSuppressTransform.BeginAnimation(TranslateTransform.XProperty, animX);
                 NotchSuppressTransform.BeginAnimation(TranslateTransform.YProperty, animY);
 
                 var fadeDur = TimeSpan.FromMilliseconds(NotchDesign.MicroTransitionMs);
-                var animOp = CreateAnim(1.0, fadeDur, NotchDesign.CreateEaseOut(), activeTransition: true);
+                var animOp = CreateAnim(GetTargetNotchOpacity(), fadeDur, NotchDesign.CreateEaseOut(), activeTransition: true);
                 NotchBorder.BeginAnimation(OpacityProperty, animOp);
             }
         }
@@ -379,12 +380,14 @@ namespace WindowsNotch.UI
                 _lastCollapsedW = w;
                 _lastCollapsedH = h;
                 _lastCollapsedHasLive = showPreview;
+                _lastCollapsedPeek = IsCollapsedPeekActive;
             }
             else
             {
                 _lastCollapsedW = double.NaN;
                 _lastCollapsedH = double.NaN;
                 _lastCollapsedHasLive = null;
+                _lastCollapsedPeek = null;
             }
 
             NotchBorder.BeginAnimation(WidthProperty, null);
@@ -410,7 +413,7 @@ namespace WindowsNotch.UI
 
             if (!_suppressed)
             {
-                ClearSuppressAnimations();
+                ClearSuppressAnimations(opacity: GetTargetNotchOpacity());
                 NotchBorder.IsHitTestVisible = true;
             }
 
@@ -463,12 +466,14 @@ namespace WindowsNotch.UI
                 _lastCollapsedW = w;
                 _lastCollapsedH = h;
                 _lastCollapsedHasLive = hasLive;
+                _lastCollapsedPeek = IsCollapsedPeekActive;
             }
             else
             {
                 _lastCollapsedW = double.NaN;
                 _lastCollapsedH = double.NaN;
                 _lastCollapsedHasLive = null;
+                _lastCollapsedPeek = null;
             }
 
             bool opening = target != NotchState.Collapsed;
@@ -500,6 +505,7 @@ namespace WindowsNotch.UI
                 : NotchDesign.CreateEaseInOut();
             PreviewHost.IsHitTestVisible = target != NotchState.Expanded;
             SetOpacity(PreviewHost, showPreview ? 1 : 0, 0, animate: true, activeTransition: true, durationMs: previewFadeMs, ease: previewEase);
+            NotchBorder.BeginAnimation(OpacityProperty, CreateAnim(GetTargetNotchOpacity(), TimeSpan.FromMilliseconds(previewFadeMs), previewEase, activeTransition: true));
             SetOpacity(ExpandedPanel, target == NotchState.Expanded ? 1 : 0,
                 target == NotchState.Expanded ? 15 : 0, animate: true, activeTransition: true,
                 durationMs: expandedFadeMs,
@@ -565,6 +571,13 @@ namespace WindowsNotch.UI
             _collapsedLiveModule = null;
             _idleView = null;
 
+            if (S.IdleVisibility == IdleVisibilityMode.AlwaysPeek)
+            {
+                if (PreviewHost.Content != null)
+                    PreviewHost.Content = null;
+                return false;
+            }
+
             if (S.LiveActivitiesEnabled)
             {
                 foreach (var module in _moduleHost.ActiveModules
@@ -622,25 +635,30 @@ namespace WindowsNotch.UI
             if (_state != NotchState.Collapsed) return;
 
             bool hasLive = UpdateCollapsedLiveContent();
+            bool isPeek = IsCollapsedPeekActive;
             var (w, h) = SizeFor(NotchState.Collapsed);
 
             bool sizeChanged = double.IsNaN(_lastCollapsedW) ||
                                Math.Abs(_lastCollapsedW - w) > 0.5 ||
                                Math.Abs(_lastCollapsedH - h) > 0.5;
             bool liveChanged = _lastCollapsedHasLive != hasLive;
-            if (!sizeChanged && !liveChanged)
+            bool peekChanged = _lastCollapsedPeek != isPeek;
+            if (!sizeChanged && !liveChanged && !peekChanged)
                 return;
 
             _lastCollapsedW = w;
             _lastCollapsedH = h;
             _lastCollapsedHasLive = hasLive;
+            _lastCollapsedPeek = isPeek;
 
             if (!NotchDesign.EffectiveAnimationsEnabled)
             {
                 NotchBorder.BeginAnimation(WidthProperty, null);
                 NotchBorder.BeginAnimation(HeightProperty, null);
+                NotchBorder.BeginAnimation(OpacityProperty, null);
                 NotchBorder.Width = w;
                 NotchBorder.Height = h;
+                NotchBorder.Opacity = GetTargetNotchOpacity();
                 SetOpacity(PreviewHost, hasLive ? 1 : 0, 0, animate: false);
                 return;
             }
@@ -654,6 +672,8 @@ namespace WindowsNotch.UI
             }
             if (liveChanged)
                 SetOpacity(PreviewHost, hasLive ? 1 : 0, 0, animate: true, activeTransition: hasLive);
+            if (liveChanged || peekChanged)
+                NotchBorder.BeginAnimation(OpacityProperty, CreateAnim(GetTargetNotchOpacity(), duration, ease, activeTransition: hasLive));
         }
 
         private void UpdatePreviewContent()
@@ -986,7 +1006,12 @@ namespace WindowsNotch.UI
         {
             if (_suppressed) return;
             _fileTrayAutoCloseTimer.Stop();
-            if (S.Mode == InteractionMode.ClickOnly) return;
+            if (_state == NotchState.Collapsed && S.Mode == InteractionMode.ClickOnly)
+            {
+                if (IsCollapsedPeekActive)
+                    NotchBorder.BeginAnimation(OpacityProperty, CreateAnim(GetTargetNotchOpacity(), TimeSpan.FromMilliseconds(NotchDesign.MicroTransitionMs), NotchDesign.CreateEaseOut(), activeTransition: true));
+                return;
+            }
             if (_state != NotchState.Collapsed) return;
 
             _hoverTimer.Interval = TimeSpan.FromMilliseconds(Math.Max(1, S.HoverDelayMs));
@@ -1018,6 +1043,10 @@ namespace WindowsNotch.UI
             if (_state == NotchState.Preview)
             {
                 SetState(NotchState.Collapsed);
+            }
+            else if (_state == NotchState.Collapsed && S.Mode == InteractionMode.ClickOnly && IsCollapsedPeekActive)
+            {
+                NotchBorder.BeginAnimation(OpacityProperty, CreateAnim(GetTargetNotchOpacity(), TimeSpan.FromMilliseconds(NotchDesign.MicroTransitionMs), NotchDesign.CreateEaseOut(), activeTransition: true));
             }
             else if (_state == NotchState.Expanded && !_isSettingsOpen && !_isOnboardingOpen && !_isTourActive && _selectedModule?.KeepExpanded != true)
             {

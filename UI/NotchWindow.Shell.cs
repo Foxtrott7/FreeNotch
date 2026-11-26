@@ -22,6 +22,24 @@ namespace WindowsNotch.UI
             }
         }
 
+        private const double PeekWidth = 120.0;
+        private const double PeekHeight = 14.0;
+        private const double PeekOpacity = 0.42;
+        private const double PeekHoverFeedbackOpacity = 0.78;
+
+        private bool IsCollapsedPeekActive =>
+            S.IdleVisibility == IdleVisibilityMode.AlwaysPeek ||
+            (S.IdleVisibility == IdleVisibilityMode.PeekWhenEmpty && _collapsedLiveModule == null && _idleView == null);
+
+        private double GetTargetNotchOpacity()
+        {
+            if (_suppressed) return 0.0;
+            if (_state != NotchState.Collapsed || !IsCollapsedPeekActive) return 1.0;
+            if (S.Mode == InteractionMode.ClickOnly && NotchBorder.IsMouseOver)
+                return PeekHoverFeedbackOpacity;
+            return PeekOpacity;
+        }
+
         private (double w, double h) SizeFor(NotchState state)
         {
             var (earX, earY) = EarPadding;
@@ -73,6 +91,13 @@ namespace WindowsNotch.UI
 
             if (state == NotchState.Collapsed)
             {
+                if (IsCollapsedPeekActive)
+                {
+                    if (IsSideEdge)
+                        return (PeekHeight + earX, PeekWidth + earY);
+                    return (PeekWidth + earX, PeekHeight + earY);
+                }
+
                 double? contentW = _collapsedLiveModule?.PreferredLiveWidth is > 0
                     ? _collapsedLiveModule.PreferredLiveWidth
                     : _idleView != null ? _idleView.Width + 48 : null;

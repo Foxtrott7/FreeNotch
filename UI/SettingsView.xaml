@@ -685,6 +685,13 @@
 
                                 <Border Height="1" Background="{DynamicResource DividerBg}" Margin="0,14" />
 
+                                <TextBlock Text="{ui:Loc settings.behavior.idle_visibility_title}" Style="{StaticResource CardTitle}" Margin="0,0,0,8" />
+                                <ComboBox x:Name="IdleVisibilityBox" Width="280" HorizontalAlignment="Left" />
+                                <TextBlock Style="{StaticResource MutedHint}" Margin="0,8,0,0"
+                                           Text="{ui:Loc settings.behavior.idle_visibility_hint}" />
+
+                                <Border Height="1" Background="{DynamicResource DividerBg}" Margin="0,14" />
+
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="180" /><ColumnDefinition Width="*" /><ColumnDefinition Width="55" />

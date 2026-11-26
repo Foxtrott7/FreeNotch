@@ -342,6 +342,15 @@ namespace WindowsNotch.UI
             };
             ModeBox.SelectedIndex = modeIdx;
 
+            int idleVisIdx = IdleVisibilityBox.SelectedIndex >= 0 ? IdleVisibilityBox.SelectedIndex : (int)_s.IdleVisibility;
+            IdleVisibilityBox.ItemsSource = new[]
+            {
+                L.T("settings.behavior.idle_always_visible"),
+                L.T("settings.behavior.idle_peek_when_empty"),
+                L.T("settings.behavior.idle_always_peek")
+            };
+            IdleVisibilityBox.SelectedIndex = idleVisIdx;
+
             int styleIdx = StyleBox.SelectedIndex >= 0 ? StyleBox.SelectedIndex : (int)_s.Style;
             StyleBox.ItemsSource = new[]
             {
@@ -462,6 +471,7 @@ namespace WindowsNotch.UI
                 _s.Language = LocalizationService.NormalizeCode(langCode);
             _s.Profile = (ProfileType)Math.Max(0, ProfileBox.SelectedIndex);
             _s.Mode = (InteractionMode)Math.Max(0, ModeBox.SelectedIndex);
+            _s.IdleVisibility = (IdleVisibilityMode)Math.Max(0, IdleVisibilityBox.SelectedIndex);
             _s.Style = (NotchStyle)Math.Max(0, StyleBox.SelectedIndex);
             _s.Theme = NotchTheme.Dark;
             _s.TargetFrameRate = FrameRateBox.SelectedIndex switch

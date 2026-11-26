@@ -8,6 +8,8 @@ namespace WindowsNotch.Core
 
     public enum InteractionMode { HoverAndClick, HoverOnly, ClickOnly }
 
+    public enum IdleVisibilityMode { AlwaysVisible, PeekWhenEmpty, AlwaysPeek }
+
     public enum NotchTheme { Dark, DarkGlass, Light, LightGlass }
 
     public enum NotchStyle { Docked, Floating }
@@ -63,6 +65,7 @@ namespace WindowsNotch.Core
 
         // Verhalten
         public InteractionMode Mode { get; set; } = InteractionMode.HoverAndClick;
+        public IdleVisibilityMode IdleVisibility { get; set; } = IdleVisibilityMode.PeekWhenEmpty;
         public double HoverDelayMs { get; set; } = 150;
         public bool CloseOnFocusLoss { get; set; } = true;
 
@@ -341,6 +344,8 @@ namespace WindowsNotch.Core
             AnimationSpeedScale = Math.Clamp(AnimationSpeedScale, 0.55, 2.0);
             CollapsedLayout = NotchInfo.Sanitize(CollapsedLayout);
             HoverLayout = NotchInfo.Sanitize(HoverLayout);
+            if (!Enum.IsDefined(IdleVisibility))
+                IdleVisibility = IdleVisibilityMode.PeekWhenEmpty;
             TargetFrameRate = TargetFrameRate switch
             {
                 <= 60 => 60,

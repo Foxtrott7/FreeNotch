@@ -117,6 +117,11 @@
   "settings.behavior.mode_click": "Click Only",
   "settings.behavior.hover_delay": "Hover delay (ms)",
   "settings.behavior.close_focus_loss": "Automatically close when focus is lost",
+  "settings.behavior.idle_visibility_title": "Idle visibility",
+  "settings.behavior.idle_always_visible": "Always fully visible",
+  "settings.behavior.idle_peek_when_empty": "Subtle when empty (mini pill)",
+  "settings.behavior.idle_always_peek": "Always subtle (mini pill)",
+  "settings.behavior.idle_visibility_hint": "Shrinks the idle notch into a semi-transparent mini pill so browser tabs remain visible. Hover or click opens it normally.",
 
   "settings.fullscreen.title": "Fullscreen",
   "settings.fullscreen.hide_title": "Automatically hide notch on",
