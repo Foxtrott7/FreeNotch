@@ -8,12 +8,13 @@
 
 **A calm, native Dynamic Island-style command surface for Windows 11 — built with C# and WPF (.NET 10).**
 
+[![Microsoft Store](https://img.shields.io/badge/Microsoft%20Store-Get%20FreeNotch-0078D4?style=flat-square&logo=microsoft&logoColor=white)](https://apps.microsoft.com/store/detail/9NWJZKMB0ZFC?cid=DevShareMCLPCS)
 [![Latest Release](https://img.shields.io/github/v/release/Foxtrott7/FreeNotch?style=flat-square&color=6D28D9)](https://github.com/Foxtrott7/FreeNotch/releases)
 [![CI](https://img.shields.io/github/actions/workflow/status/Foxtrott7/FreeNotch/ci.yml?branch=master&style=flat-square&label=CI)](https://github.com/Foxtrott7/FreeNotch/actions/workflows/ci.yml)
 [![License: PolyForm Noncommercial 1.0.0](https://img.shields.io/badge/License-PolyForm%20Noncommercial%201.0.0-blue.svg?style=flat-square)](LICENSE)
 [![.NET 10](https://img.shields.io/badge/.NET-10%20LTS-512BD4?style=flat-square)](https://dotnet.microsoft.com/download/dotnet/10.0)
 
-[Download Latest Release](https://github.com/Foxtrott7/FreeNotch/releases/latest) · [Privacy Policy](PRIVACY.md) · [Security Policy](SECURITY.md) · [Build from Source](#build-from-source)
+[Get it from Microsoft Store](https://apps.microsoft.com/store/detail/9NWJZKMB0ZFC?cid=DevShareMCLPCS) · [GitHub Releases](https://github.com/Foxtrott7/FreeNotch/releases/latest) · [Privacy Policy](PRIVACY.md) · [Security Policy](SECURITY.md) · [Build from Source](#build-from-source)
 
 </div>
 
@@ -52,13 +53,21 @@ FreeNotch turns the top edge of your Windows 11 screen into an adaptive, low-dis
 
 ## Download & Install
 
-> All release builds are **self-contained** (`.NET 10` runtime included) and require **no administrator rights**.
+> All builds are **self-contained** (`.NET 10` runtime included) and require **no administrator rights**.
+
+### Option 1: Microsoft Store *(Recommended)*
+
+Install directly from the **[Microsoft Store](https://apps.microsoft.com/store/detail/9NWJZKMB0ZFC?cid=DevShareMCLPCS)**:
+- **Microsoft-signed MSIX package**: No SmartScreen warnings and compatible with Windows 11 Smart App Control.
+- **Automatic updates** via the Microsoft Store and native Windows `StartupTask` auto-start support.
+
+### Option 2: Direct Download (GitHub Releases)
 
 1. Go to the **[Latest Release](https://github.com/Foxtrott7/FreeNotch/releases/latest)** page and choose your package:
 
    | Package | Best for | Details |
    |---|---|---|
-   | **`FreeNotch-v*-win-x64-setup.exe`** *(Recommended)* | Everyday use | Per-user Inno Setup installer (`%LocalAppData%\Programs\FreeNotch`), English & German wizard, Start Menu shortcut, automatic stop of running instances on update, and standard Windows *Apps & Features* uninstall |
+   | **`FreeNotch-v*-win-x64-setup.exe`** | Per-user installer | Per-user Inno Setup installer (`%LocalAppData%\Programs\FreeNotch`), English & German wizard, Start Menu shortcut, automatic stop of running instances on update, and standard Windows *Apps & Features* uninstall |
    | **`FreeNotch-v*-win-x64-portable.zip`** | No installation | Extract anywhere and launch **`FreeNotch.exe`** directly |
 
 2. *(Recommended)* Verify the file integrity against **`SHA256SUMS.txt`** from the same release:
@@ -66,11 +75,11 @@ FreeNotch turns the top edge of your Windows 11 screen into an adaptive, low-dis
    Get-FileHash .\FreeNotch-v*-win-x64-setup.exe -Algorithm SHA256
    ```
 
-> **Note on Unsigned Open-Source Builds**
+> **Note on Unsigned GitHub Release Builds**
 >
-> Release binaries are currently **unsigned** (no commercial EV certificate yet):
+> Direct downloads from GitHub Releases (`setup.exe` and portable `.zip`) are currently **unsigned** — for a signed install without warnings, use the **[Microsoft Store](https://apps.microsoft.com/store/detail/9NWJZKMB0ZFC?cid=DevShareMCLPCS)**:
 > - **Windows SmartScreen**: On first launch, Windows may display *"Windows protected your PC"*. After verifying the SHA-256 checksum against `SHA256SUMS.txt`, click **More info → Run anyway**.
-> - **Windows 11 Smart App Control**: If Smart App Control is set to *On* (enforcement mode), Windows blocks unsigned executables without a per-app override. In that case, build from source below or wait for future code-signed releases.
+> - **Windows 11 Smart App Control**: If Smart App Control is set to *On* (enforcement mode), Windows blocks unsigned executables without a per-app override. Use the Microsoft Store version or build from source below.
 
 ---
 
@@ -119,7 +128,7 @@ dotnet test tests/WindowsNotch.Tests/WindowsNotch.Tests.csproj
 
 ## Known Issues & Limitations
 
-- **Unsigned Executables**: Release builds are currently unsigned and may trigger a Windows SmartScreen prompt on first launch (verify checksums via `SHA256SUMS.txt`), and cannot run when Windows 11 Smart App Control is in enforcement mode.
+- **Unsigned GitHub Releases**: Direct downloads from GitHub Releases (`setup.exe` / portable `.zip`) are currently unsigned and may trigger a Windows SmartScreen prompt on first launch (verify checksums via `SHA256SUMS.txt`), and cannot run when Windows 11 Smart App Control is in enforcement mode. Install via the **[Microsoft Store](https://apps.microsoft.com/store/detail/9NWJZKMB0ZFC?cid=DevShareMCLPCS)** for a Microsoft-signed build.
 - **System Limits**: Bluetooth battery reporting depends on the device's Windows driver; Windows notification listening uses a 500 ms polling fallback when running unpackaged.
 
 ---
